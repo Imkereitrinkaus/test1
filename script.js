@@ -20,16 +20,6 @@ var PRODUKTE = [
     badge: null,
     sommer: true
   }
-  {
-    id: 'sommertracht250',
-    name: 'Sommertracht',
-    untertitel: 'Kr\u00e4ftiger Trachthonig',
-    gewicht: '250\u202fg',
-    preis: 4.50,
-    beschreibung: 'Kr\u00e4ftig und w\u00fcrzig \u2013 die volle Kraft der Sommerpflanzen im Glas. Intensiver Charakter, langanhaltend im Abgang. Ideal zu K\u00e4se oder dunklem Brot.',
-    badge: null,
-    sommer: true
-  }
 ];
 
 document.addEventListener('DOMContentLoaded', function () {
