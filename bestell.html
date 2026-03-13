@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bestellung – Trinkaus &amp; Söhne</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav__inner">
+    <a class="nav__logo" href="index.html">
+      <svg class="nav__logo-hex" viewBox="0 0 60 70" fill="none">
+        <polygon points="30,2 58,18 58,52 30,68 2,52 2,18" stroke="#F0A500" stroke-width="3" fill="none"/>
+        <polygon points="30,12 48,23 48,47 30,58 12,47 12,23" stroke="#F0A500" stroke-width="1.5" fill="none" stroke-opacity="0.4"/>
+      </svg>
+      <div class="nav__brand">Trinkaus &amp; Söhne<span>Imkerei</span></div>
+    </a>
+    <ul class="nav__links">
+      <li><a class="nav__link" href="index.html">Startseite</a></li>
+      <li><a class="nav__link" href="honig.html">Honig</a></li>
+      <li><a class="nav__link" href="ueber.html">Über uns</a></li>
+      <li><a class="nav__link  active" href="bestell.html">Bestellung</a></li>
+    </ul>
+    <a class="btn btn--primary nav__cta" href="bestell.html">Jetzt bestellen</a>
+    <button class="nav__burger" id="burgerBtn" aria-label="Menü" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-nav" id="mobileNav">
+  <a class="mobile-nav__link" href="index.html">Startseite</a>
+  <a class="mobile-nav__link" href="honig.html">Honig</a>
+  <a class="mobile-nav__link" href="ueber.html">Über uns</a>
+  <a class="mobile-nav__link  active" href="bestell.html">Bestellung</a>
+  <a class="mobile-nav__link" style="font-size:1rem;opacity:.55" href="impressum.html">Impressum</a>
+  <a class="mobile-nav__link" style="font-size:1rem;opacity:.55" href="datenschutz.html">Datenschutz</a>
+  <a class="btn btn--primary" href="bestell.html" style="margin-top:24px;align-self:flex-start">Jetzt bestellen &#8594;</a>
+</div>
+<main>
+
+  <section class="section section--cream">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-header__eyebrow"><span class="section-header__eyebrow-line"></span><span class="section-header__eyebrow-text">Bestellung &amp; Kontakt</span></div>
+        <h1>Direkt bestellen</h1>
+        <p class="lead">Wählen Sie Ihre Sorten und Mengen. Wir melden uns innerhalb von 48 Stunden.</p>
+      </div>
+      <div class="order__grid">
+        <div class="order__calculator">
+          <div class="order__calc-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Bestellrechner
+          </div>
+          <div id="calcItems"></div>
+          <div class="order__total">
+            <span class="order__total-label">Gesamt</span>
+            <span class="order__total-amount" id="totalAmount">0,00 €</span>
+          </div>
+          <div class="order__summary-box">
+            <p style="font-weight:600;color:#1A1A18;margin-bottom:12px">Ihre Auswahl</p>
+            <div id="orderSummary"></div>
+          </div>
+        </div>
+        <div>
+          <form id="orderForm" novalidate>
+            <p class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Ihre Angaben
+            </p>
+            <div class="form-row">
+              <div class="form-group"><label for="vorname">Vorname</label><input class="form-input" type="text" id="vorname" required autocomplete="given-name" placeholder="Anna"></div>
+              <div class="form-group"><label for="nachname">Nachname</label><input class="form-input" type="text" id="nachname" required autocomplete="family-name" placeholder="Müller"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label for="email">E-Mail</label><input class="form-input" type="email" id="email" required autocomplete="email" placeholder="anna@beispiel.de"></div>
+              <div class="form-group"><label for="telefon">Telefon <span class="optional">(optional)</span></label><input class="form-input" type="tel" id="telefon" placeholder="+49 123 456789"></div>
+            </div>
+            <p class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Lieferadresse
+            </p>
+            <div class="form-group"><label for="strasse">Straße / Hausnummer</label><input class="form-input" type="text" id="strasse" required autocomplete="street-address" placeholder="Musterstraße 12"></div>
+            <div class="form-row">
+              <div class="form-group"><label for="plz">PLZ</label><input class="form-input" type="text" id="plz" required autocomplete="postal-code" placeholder="12345" maxlength="5"></div>
+              <div class="form-group"><label for="ort">Ort</label><input class="form-input" type="text" id="ort" required autocomplete="address-level2" placeholder="Musterstadt"></div>
+            </div>
+            <p class="form-section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              Abwicklung
+            </p>
+            <div class="form-group">
+              <label for="abwicklung">Abholung oder Lieferung</label>
+              <select class="form-select" id="abwicklung" required>
+                <option value="">Bitte wählen …</option>
+                <option value="abholung">Abholung (nach Absprache)</option>
+                <option value="lieferung">Lieferung / Versand anfragen</option>
+              </select>
+            </div>
+            <div class="form-group"><label for="bemerkung">Bemerkung <span class="optional">(optional)</span></label><textarea class="form-textarea" id="bemerkung" placeholder="Wunschtermin, Fragen …"></textarea></div>
+            <div class="form-submit-area">
+              <button type="submit" class="btn btn--dark btn--full btn--lg">Bestellung senden &#8594;</button>
+              <p class="form-note">Ihre Angaben werden nur zur Auftragsabwicklung verwendet.</p>
+            </div>
+          </form>
+          <div class="success-msg" id="successMsg">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#F0A500" stroke-width="2" style="margin:0 auto 16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h3>Bestellung eingegangen!</h3>
+            <p>Vielen Dank, <strong id="successName"></strong>. Wir melden uns innerhalb von 48 Stunden.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__inner">
+      <div>
+        <div class="footer__brand-name">Trinkaus &amp; Söhne<span>Imkerei &middot; Handarbeit &middot; Honig</span></div>
+        <p class="footer__desc">Kleine Imkerei, großer Anspruch. Jedes Glas handabgefüllt und mit Freude gemacht.</p>
+      </div>
+      <div>
+        <p class="footer__col-title">Navigation</p>
+        <ul class="footer__links">
+          <li><a class="footer__link" href="index.html">Startseite</a></li>
+          <li><a class="footer__link" href="honig.html">Honig &amp; Produkte</a></li>
+          <li><a class="footer__link" href="ueber.html">Über uns</a></li>
+          <li><a class="footer__link" href="bestell.html">Bestellung &amp; Kontakt</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer__col-title">Kontakt</p>
+        <ul class="footer__links">
+          <li><span style="font-size:.85rem;color:rgba(255,255,255,.55)">Familie Trinkaus</span></li>
+          <li><a class="footer__link" href="mailto:info@trinkaus-imkerei.de">info@trinkaus-imkerei.de</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>&#169; 2025 Trinkaus &amp; Söhne</span>
+      <div class="footer__legal">
+        <a class="footer__link" href="impressum.html">Impressum</a>
+        <a class="footer__link" href="datenschutz.html">Datenschutz</a>
+      </div>
+      <span class="footer__honey-mark">&#187;Natur im Glas.&#171;</span>
+    </div>
+  </div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
