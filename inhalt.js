@@ -10,12 +10,12 @@ var SITE = {
     name:      "Trinkaus \u0026 S\u00f6hne",
     zusatz:    "Imkerei",
     slogan:    "Natur im Glas.",
-    strasse:   "Musterstra\u00dfe 1",          /* \u2190 HIER ANPASSEN */
-    plz:       "12345",                         /* \u2190 HIER ANPASSEN */
-    ort:       "Musterstadt",                   /* \u2190 HIER ANPASSEN */
+    strasse:   "Am St\u00E4mmisch Busch 32",          /* \u2190 HIER ANPASSEN */
+    plz:       "58455",                         /* \u2190 HIER ANPASSEN */
+    ort:       "Witten",                   /* \u2190 HIER ANPASSEN */
     email:     "info@trinkaus-imkerei.de",      /* \u2190 HIER ANPASSEN */
     telefon:   "",                              /* optional */
-    gruendung: "2018"
+    gruendung: "2016"
   },
 
   /* ── Navigation ───────────────────────────────────────── */
@@ -53,7 +53,7 @@ var SITE = {
   /* ── Startseite ───────────────────────────────────────── */
   home: {
     hero_eyebrow:   "Familienimkerei \u00b7 Regional \u00b7 Handarbeit",
-    hero_titel:     "Echter Honig.<br><em>Aus eigener Hand.</em>",
+    hero_titel:     "Honig.<br><em>Von unseren eigenen Bienen.</em>",
     hero_text:      "Eine Imkerei aus Leidenschaft. Kleiner Betrieb. Gro\u00dfer Anspruch. Jedes Glas handabgef\u00fcllt, unbehandelt, ehrlich.",
     teaser_eyebrow: "Aus unserer Imkerei",
     teaser_titel:   "Zwei Sorten. Ein Anspruch.",
@@ -63,12 +63,10 @@ var SITE = {
     trust_text:     "Wir schleudern, wenn der Honig bereit ist \u2013 nicht wenn der Kalender es vorschreibt.",
     trust_liste: [
       "Bienen auf eigener Wiese, keine Wanderimkerei",
-      "Kaltgeschleudert \u2013 schonend, ohne W\u00e4rmeverlust",
-      "Ohne Zus\u00e4tze, ohne Aufheizen, ohne Tricks",
-      "Abgef\u00fcllt in wiederverwendbare Gl\u00e4ser",
+      "Abgef\u00fcllt in wiederverwendbare Neutral-Gl\u00e4ser",
       "Direkt vom Imker \u2013 kurze Wege, volle Transparenz"
     ],
-    cta_titel: "Bereit f\u00fcr echten Honig?",
+    cta_titel: "Bereit f\u00fcr unseren Honig?",
     cta_text:  "Direkt bei uns bestellen \u2013 Abholung oder Lieferung auf Anfrage."
   },
 
@@ -77,7 +75,7 @@ var SITE = {
     titel:         "Unser Honig",
     untertitel:    "Jede Sorte ist ein Saisonportr\u00e4t. Was die Bienen sammeln, bestimmt das Ergebnis.",
     hinweis_titel: "Nat\u00fcrliche Kristallisation",
-    hinweis_text:  "Echter Honig kristallisiert mit der Zeit \u2013 das ist ein Zeichen von Qualit\u00e4t. Im Wasserbad bei max.\u00a040\u202f\u00b0C l\u00e4sst er sich wieder verfl\u00fcssigen."
+    hinweis_text:  "Echter Honig kristallisiert mit der Zeit \u2013 das ist ein Zeichen von Qualit\u00e4t. Im Wasserbad bei max.\u00a038\u202f\u00b0C l\u00e4sst er sich wieder verfl\u00fcssigen."
   },
 
   /* ── \u00dcber-uns-Seite ─────────────────────────────────────── */
@@ -88,9 +86,8 @@ var SITE = {
     text:    "Trinkaus \u0026 S\u00f6hne steht f\u00fcr das, was man heute selten findet: Honig, der so schmeckt, wie er soll. Unbehandelt. Ungefiltert. Ehrlich.",
     zitat:   "Unsere Bienen entscheiden, was geerntet wird. Wir sorgen daf\u00fcr, dass es so ins Glas kommt, wie sie es gemacht haben.",
     liste: [
-      "Bienen auf eigenem Gel\u00e4nde \u2013 keine Wanderung",
-      "Schleuderung nur bei optimaler Reife",
-      "Kaltschleuderung: max.\u00a040\u202f\u00b0C, Enzyme bleiben erhalten",
+      "Bienen auf Wittener Gel\u00e4nde \u2013 keine Wanderung",
+      "Schleuderung nur bei optimaler Reife",,
       "Handabf\u00fcllung in Mehrwegg\u00e4ser",
       "Direktvertrieb \u2013 ohne Zwischenh\u00e4ndler"
     ]
@@ -99,8 +96,8 @@ var SITE = {
   /* ── Bestellseite ─────────────────────────────────────── */
   bestell: {
     titel:    "Direkt bestellen",
-    untertitel: "W\u00e4hlen Sie Ihre Sorten und Mengen. Wir melden uns innerhalb von 48 Stunden.",
-    erfolg:   "Vielen Dank! Wir melden uns innerhalb von 48 Stunden."
+    untertitel: "W\u00e4hlen Sie Ihre Sorten und Mengen. Wir melden uns innerhalb von 24 Stunden.",
+    erfolg:   "Vielen Dank! Wir melden uns innerhalb von 24 Stunden."
   }
 
 };
