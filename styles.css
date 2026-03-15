@@ -177,3 +177,5 @@ label .optional{font-weight:400;color:var(--muted);text-transform:none;letter-sp
   .form-row{grid-template-columns:1fr}
   .hero h1{font-size:2rem}
 }
+.nav__brand-sub{display:block;font-size:.6rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--honey);font-family:var(--font-body)}
+.footer__brand-sub{display:block;font-size:.6rem;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--honey);font-family:var(--font-body)}

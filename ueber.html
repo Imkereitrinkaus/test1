@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -18,31 +17,17 @@
         <polygon points="30,2 58,18 58,52 30,68 2,52 2,18" stroke="#F0A500" stroke-width="3" fill="none"/>
         <polygon points="30,12 48,23 48,47 30,58 12,47 12,23" stroke="#F0A500" stroke-width="1.5" fill="none" stroke-opacity="0.4"/>
       </svg>
-      <div class="nav__brand">Trinkaus &amp; Söhne<span>Imkerei</span></div>
+      <div class="nav__brand"><span data-site="name"></span><span class="nav__brand-sub">Imkerei</span></div>
     </a>
-    <ul class="nav__links">
-      <li><a class="nav__link" href="index.html">Startseite</a></li>
-      <li><a class="nav__link" href="honig.html">Honig</a></li>
-      <li><a class="nav__link  active" href="ueber.html">Über uns</a></li>
-      <li><a class="nav__link" href="bestell.html">Bestellung</a></li>
-    </ul>
+    <ul class="nav__links" id="navLinks"></ul>
     <a class="btn btn--primary nav__cta" href="bestell.html">Jetzt bestellen</a>
     <button class="nav__burger" id="burgerBtn" aria-label="Menü" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </div>
 </nav>
-<div class="mobile-nav" id="mobileNav">
-  <a class="mobile-nav__link" href="index.html">Startseite</a>
-  <a class="mobile-nav__link" href="honig.html">Honig</a>
-  <a class="mobile-nav__link  active" href="ueber.html">Über uns</a>
-  <a class="mobile-nav__link" href="bestell.html">Bestellung</a>
-  <a class="mobile-nav__link" style="font-size:1rem;opacity:.55" href="impressum.html">Impressum</a>
-  <a class="mobile-nav__link" style="font-size:1rem;opacity:.55" href="datenschutz.html">Datenschutz</a>
-  <a class="btn btn--primary" href="bestell.html" style="margin-top:24px;align-self:flex-start">Jetzt bestellen &#8594;</a>
-</div>
+<div class="mobile-nav" id="mobileNav"></div>
 <main>
-
   <section class="section section--cream">
     <div class="container">
       <div class="about__grid">
@@ -52,64 +37,53 @@
             <polygon points="230,204 310,250 310,342 230,388 150,342 150,250" stroke="#1A1A18" stroke-width="3" fill="rgba(240,165,0,0.08)"/>
             <circle cx="230" cy="112" r="40" fill="rgba(240,165,0,0.18)" stroke="#F0A500" stroke-width="2"/>
             <text x="230" y="107" text-anchor="middle" font-family="Georgia,serif" font-size="11" fill="#1A1A18" font-style="italic">seit</text>
-            <text x="230" y="125" text-anchor="middle" font-family="Georgia,serif" font-size="22" fill="#1A1A18" font-weight="bold">2018</text>
+            <text x="230" y="125" text-anchor="middle" font-family="Georgia,serif" font-size="22" fill="#1A1A18" font-weight="bold" id="gruendungSvg"></text>
           </svg>
         </div>
         <div>
-          <div class="section-header__eyebrow" style="margin-bottom:16px"><span class="section-header__eyebrow-line"></span><span class="section-header__eyebrow-text">Die Imkerei</span></div>
-          <h1>Handwerk<br>mit Leidenschaft.</h1>
-          <p class="lead" style="margin-top:24px">Wir sind keine Imkermeister von Beruf – wir sind es aus Überzeugung.</p>
-          <p style="margin-top:16px;line-height:1.8;color:#2E2E2B">Trinkaus &amp; Söhne steht für das, was man heute selten findet: Honig, der so schmeckt, wie er soll. Unbehandelt. Ungefiltert. Ehrlich.</p>
-          <blockquote class="about__quote">&#187;Unsere Bienen entscheiden, was geerntet wird. Wir sorgen dafür, dass es so ins Glas kommt, wie sie es gemacht haben.&#171;</blockquote>
-          <ul class="about__list">
-            <li>Bienen auf eigenem Gelände – keine Wanderung</li>
-            <li>Schleuderung nur bei optimaler Reife</li>
-            <li>Kaltschleuderung: max. 40 °C, Enzyme bleiben erhalten</li>
-            <li>Handabfüllung in Mehrweggäser</li>
-            <li>Direktvertrieb – ohne Zwischenhändler</li>
-          </ul>
+          <div class="section-header__eyebrow" style="margin-bottom:16px"><span class="section-header__eyebrow-line"></span><span class="section-header__eyebrow-text" id="ueberEyebrow"></span></div>
+          <h1 id="ueberTitel"></h1>
+          <p class="lead" style="margin-top:24px" id="ueberLead"></p>
+          <p style="margin-top:16px;line-height:1.8;color:#2E2E2B" id="ueberText"></p>
+          <blockquote class="about__quote" id="ueberZitat"></blockquote>
+          <ul class="about__list" id="ueberListe"></ul>
           <a class="btn btn--primary" href="bestell.html" style="margin-top:32px;display:inline-flex">Direkt bestellen &#8594;</a>
         </div>
       </div>
     </div>
   </section>
-
 </main>
 
 <footer class="footer">
   <div class="container">
     <div class="footer__inner">
       <div>
-        <div class="footer__brand-name">Trinkaus &amp; Söhne<span>Imkerei &middot; Handarbeit &middot; Honig</span></div>
+        <div class="footer__brand-name"><span data-site="name"></span><span class="footer__brand-sub">Imkerei &middot; Handarbeit &middot; Honig</span></div>
         <p class="footer__desc">Kleine Imkerei, großer Anspruch. Jedes Glas handabgefüllt und mit Freude gemacht.</p>
       </div>
       <div>
         <p class="footer__col-title">Navigation</p>
-        <ul class="footer__links">
-          <li><a class="footer__link" href="index.html">Startseite</a></li>
-          <li><a class="footer__link" href="honig.html">Honig &amp; Produkte</a></li>
-          <li><a class="footer__link" href="ueber.html">Über uns</a></li>
-          <li><a class="footer__link" href="bestell.html">Bestellung &amp; Kontakt</a></li>
-        </ul>
+        <ul class="footer__links" id="footerNav"></ul>
       </div>
       <div>
         <p class="footer__col-title">Kontakt</p>
         <ul class="footer__links">
-          <li><span style="font-size:.85rem;color:rgba(255,255,255,.55)">Familie Trinkaus</span></li>
-          <li><a class="footer__link" href="mailto:info@trinkaus-imkerei.de">info@trinkaus-imkerei.de</a></li>
+          <li><span style="font-size:.85rem;color:rgba(255,255,255,.55)" data-site="name"></span></li>
+          <li><span class="footer__link" data-site="email"></span></li>
         </ul>
       </div>
     </div>
     <div class="footer__bottom">
-      <span>&#169; 2025 Trinkaus &amp; Söhne</span>
+      <span>&copy; <span data-site="jahr"></span> <span data-site="name"></span></span>
       <div class="footer__legal">
         <a class="footer__link" href="impressum.html">Impressum</a>
         <a class="footer__link" href="datenschutz.html">Datenschutz</a>
       </div>
-      <span class="footer__honey-mark">&#187;Natur im Glas.&#171;</span>
+      <span class="footer__honey-mark" data-site="slogan"></span>
     </div>
   </div>
 </footer>
+<script src="inhalt.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

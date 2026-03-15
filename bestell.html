@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -18,37 +17,23 @@
         <polygon points="30,2 58,18 58,52 30,68 2,52 2,18" stroke="#F0A500" stroke-width="3" fill="none"/>
         <polygon points="30,12 48,23 48,47 30,58 12,47 12,23" stroke="#F0A500" stroke-width="1.5" fill="none" stroke-opacity="0.4"/>
       </svg>
-      <div class="nav__brand">Trinkaus &amp; Söhne<span>Imkerei</span></div>
+      <div class="nav__brand"><span data-site="name"></span><span class="nav__brand-sub">Imkerei</span></div>
     </a>
-    <ul class="nav__links">
-      <li><a class="nav__link" href="index.html">Startseite</a></li>
-      <li><a class="nav__link" href="honig.html">Honig</a></li>
-      <li><a class="nav__link" href="ueber.html">Über uns</a></li>
-      <li><a class="nav__link  active" href="bestell.html">Bestellung</a></li>
-    </ul>
+    <ul class="nav__links" id="navLinks"></ul>
     <a class="btn btn--primary nav__cta" href="bestell.html">Jetzt bestellen</a>
     <button class="nav__burger" id="burgerBtn" aria-label="Menü" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </div>
 </nav>
-<div class="mobile-nav" id="mobileNav">
-  <a class="mobile-nav__link" href="index.html">Startseite</a>
-  <a class="mobile-nav__link" href="honig.html">Honig</a>
-  <a class="mobile-nav__link" href="ueber.html">Über uns</a>
-  <a class="mobile-nav__link  active" href="bestell.html">Bestellung</a>
-  <a class="mobile-nav__link" style="font-size:1rem;opacity:.55" href="impressum.html">Impressum</a>
-  <a class="mobile-nav__link" style="font-size:1rem;opacity:.55" href="datenschutz.html">Datenschutz</a>
-  <a class="btn btn--primary" href="bestell.html" style="margin-top:24px;align-self:flex-start">Jetzt bestellen &#8594;</a>
-</div>
+<div class="mobile-nav" id="mobileNav"></div>
 <main>
-
   <section class="section section--cream">
     <div class="container">
       <div class="section-header">
         <div class="section-header__eyebrow"><span class="section-header__eyebrow-line"></span><span class="section-header__eyebrow-text">Bestellung &amp; Kontakt</span></div>
-        <h1>Direkt bestellen</h1>
-        <p class="lead">Wählen Sie Ihre Sorten und Mengen. Wir melden uns innerhalb von 48 Stunden.</p>
+        <h1 id="bestellTitel"></h1>
+        <p class="lead" id="bestellUntertitel"></p>
       </div>
       <div class="order__grid">
         <div class="order__calculator">
@@ -104,55 +89,50 @@
             <div class="form-group"><label for="bemerkung">Bemerkung <span class="optional">(optional)</span></label><textarea class="form-textarea" id="bemerkung" placeholder="Wunschtermin, Fragen …"></textarea></div>
             <div class="form-submit-area">
               <button type="submit" class="btn btn--dark btn--full btn--lg">Bestellung senden &#8594;</button>
-              <p class="form-note">Ihre Angaben werden nur zur Auftragsabwicklung verwendet.</p>
+              <p class="form-note">Ihre Angaben werden nur zur Auftragsabwicklung verwendet und an <a id="bestellEmail" style="color:var(--honey-dark)">uns</a> gesendet.</p>
             </div>
           </form>
           <div class="success-msg" id="successMsg">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#F0A500" stroke-width="2" style="margin:0 auto 16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             <h3>Bestellung eingegangen!</h3>
-            <p>Vielen Dank, <strong id="successName"></strong>. Wir melden uns innerhalb von 48 Stunden.</p>
+            <p>Vielen Dank, <strong id="successName"></strong>. <span id="bestellErfolg"></span></p>
           </div>
         </div>
       </div>
     </div>
   </section>
-
 </main>
 
 <footer class="footer">
   <div class="container">
     <div class="footer__inner">
       <div>
-        <div class="footer__brand-name">Trinkaus &amp; Söhne<span>Imkerei &middot; Handarbeit &middot; Honig</span></div>
+        <div class="footer__brand-name"><span data-site="name"></span><span class="footer__brand-sub">Imkerei &middot; Handarbeit &middot; Honig</span></div>
         <p class="footer__desc">Kleine Imkerei, großer Anspruch. Jedes Glas handabgefüllt und mit Freude gemacht.</p>
       </div>
       <div>
         <p class="footer__col-title">Navigation</p>
-        <ul class="footer__links">
-          <li><a class="footer__link" href="index.html">Startseite</a></li>
-          <li><a class="footer__link" href="honig.html">Honig &amp; Produkte</a></li>
-          <li><a class="footer__link" href="ueber.html">Über uns</a></li>
-          <li><a class="footer__link" href="bestell.html">Bestellung &amp; Kontakt</a></li>
-        </ul>
+        <ul class="footer__links" id="footerNav"></ul>
       </div>
       <div>
         <p class="footer__col-title">Kontakt</p>
         <ul class="footer__links">
-          <li><span style="font-size:.85rem;color:rgba(255,255,255,.55)">Familie Trinkaus</span></li>
-          <li><a class="footer__link" href="mailto:info@trinkaus-imkerei.de">info@trinkaus-imkerei.de</a></li>
+          <li><span style="font-size:.85rem;color:rgba(255,255,255,.55)" data-site="name"></span></li>
+          <li><span class="footer__link" data-site="email"></span></li>
         </ul>
       </div>
     </div>
     <div class="footer__bottom">
-      <span>&#169; 2025 Trinkaus &amp; Söhne</span>
+      <span>&copy; <span data-site="jahr"></span> <span data-site="name"></span></span>
       <div class="footer__legal">
         <a class="footer__link" href="impressum.html">Impressum</a>
         <a class="footer__link" href="datenschutz.html">Datenschutz</a>
       </div>
-      <span class="footer__honey-mark">&#187;Natur im Glas.&#171;</span>
+      <span class="footer__honey-mark" data-site="slogan"></span>
     </div>
   </div>
 </footer>
+<script src="inhalt.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
