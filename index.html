@@ -3,139 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trinkaus &amp; Söhne – Imkerei</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <title>Spiele</title>
+  <style>
+    :root { --bg: #f3f5f9; --card: #ffffff; --ink: #161a2b; --muted: #5d6680; --line: #c9cfdd; --accent: #1f4fd1; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0f1220; --card: #171b2d; --ink: #e8ebf5; --muted: #9aa3bf; --line: #333a56; --accent: #8fb0ff; color-scheme: dark; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 48px 16px;
+    }
+    main { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 16px; }
+    h1 { margin: 0 0 8px; font-size: 2rem; }
+    a.game {
+      display: block;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      color: inherit;
+      text-decoration: none;
+    }
+    a.game:hover, a.game:focus-visible { border-color: var(--accent); outline: none; }
+    a.game h2 { margin: 0 0 6px; font-size: 1.3rem; color: var(--accent); }
+    a.game p { margin: 0; color: var(--muted); line-height: 1.5; }
+  </style>
 </head>
 <body>
-<nav class="nav">
-  <div class="nav__inner">
-    <a class="nav__logo" href="index.html">
-      <svg class="nav__logo-hex" viewBox="0 0 60 70" fill="none">
-        <polygon points="30,2 58,18 58,52 30,68 2,52 2,18" stroke="#F0A500" stroke-width="3" fill="none"/>
-        <polygon points="30,12 48,23 48,47 30,58 12,47 12,23" stroke="#F0A500" stroke-width="1.5" fill="none" stroke-opacity="0.4"/>
-      </svg>
-      <div class="nav__brand"><span data-site="name"></span><span class="nav__brand-sub">Imkerei</span></div>
+  <main>
+    <h1>Spiele</h1>
+    <a class="game" href="blockblast.html">
+      <h2>Block Blast</h2>
+      <p>Teile auf ein 8×8-Feld ziehen und volle Reihen und Spalten abräumen.</p>
     </a>
-    <ul class="nav__links" id="navLinks"></ul>
-    <a class="btn btn--primary nav__cta" href="bestell.html">Jetzt bestellen</a>
-    <button class="nav__burger" id="burgerBtn" aria-label="Menü" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</nav>
-<div class="mobile-nav" id="mobileNav"></div>
-<main>
-  <section class="hero">
-    <div class="hero__inner">
-      <div>
-        <div class="hero__eyebrow">
-          <span class="hero__eyebrow-line"></span>
-          <span class="hero__eyebrow-text" id="heroEyebrow"></span>
-        </div>
-        <h1 id="heroTitel"></h1>
-        <p class="lead" id="heroText"></p>
-        <div class="hero__actions">
-          <a class="btn btn--primary btn--lg" href="bestell.html">Jetzt bestellen</a>
-          <a class="btn btn--outline" href="honig.html">Unsere Sorten</a>
-        </div>
-        <div class="badges">
-          <div class="badge"><svg class="badge__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="badge__text">100 % regional</span></div>
-          <div class="badge"><svg class="badge__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span class="badge__text">Keine Zusätze</span></div>
-          <div class="badge"><svg class="badge__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="badge__text">Handabgefüllt</span></div>
-        </div>
-      </div>
-      <div class="hero__visual" aria-hidden="true">
-        <svg class="hero__hex-cluster" viewBox="0 0 420 420" fill="none">
-          <polygon points="210,30 255,56.5 255,109.5 210,136 165,109.5 165,56.5" stroke="#F0A500" stroke-width="2.5" fill="rgba(240,165,0,0.06)"/>
-          <polygon points="210,130 255,156.5 255,209.5 210,236 165,209.5 165,156.5" stroke="#F0A500" stroke-width="3" fill="rgba(240,165,0,0.12)"/>
-          <polygon points="300,80 345,106.5 345,159.5 300,186 255,159.5 255,106.5" stroke="#F0A500" stroke-width="2.5" fill="rgba(240,165,0,0.04)"/>
-          <polygon points="120,80 165,106.5 165,159.5 120,186 75,159.5 75,106.5" stroke="#F0A500" stroke-width="2.5" fill="rgba(240,165,0,0.04)"/>
-          <polygon points="300,180 345,206.5 345,259.5 300,286 255,259.5 255,206.5" stroke="#F0A500" stroke-width="2.5" fill="rgba(240,165,0,0.06)"/>
-          <polygon points="120,180 165,206.5 165,259.5 120,286 75,259.5 75,206.5" stroke="#F0A500" stroke-width="2.5" fill="rgba(240,165,0,0.06)"/>
-          <circle cx="210" cy="183" r="18" fill="#F0A500" opacity="0.9"/>
-        </svg>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="values__grid">
-      <div class="value-item"><span class="value-item__number">2</span><span class="value-item__label">Honigsorten</span></div>
-      <div class="value-item"><span class="value-item__number">500<small style="font-size:1.2rem">g</small></span><span class="value-item__label">Füllmenge je Glas</span></div>
-      <div class="value-item"><span class="value-item__number">7,50<small style="font-size:1rem"> €</small></span><span class="value-item__label">Preis pro Glas</span></div>
-    </div>
-  </section>
-
-  <section class="section section--cream hex-bg">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-header__eyebrow"><span class="section-header__eyebrow-line"></span><span class="section-header__eyebrow-text" id="teaserEyebrow"></span></div>
-        <h2 id="teaserTitel"></h2>
-        <p class="lead" id="teaserText"></p>
-      </div>
-      <div class="teaser-grid" id="teaserGrid"></div>
-      <div style="margin-top:32px;text-align:center">
-        <a class="btn btn--outline-dark" href="honig.html">Alle Produkte entdecken &#8594;</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section--white">
-    <div class="container">
-      <div class="trust-grid">
-        <div>
-          <div class="section-header__eyebrow" style="margin-bottom:16px"><span class="section-header__eyebrow-line"></span><span class="section-header__eyebrow-text" id="trustEyebrow"></span></div>
-          <h2 id="trustTitel"></h2>
-          <p class="lead" style="margin-top:16px" id="trustText"></p>
-          <a class="btn btn--primary" href="ueber.html" style="margin-top:32px;display:inline-flex">Mehr über uns</a>
-        </div>
-        <ul class="about__list" id="trustListe" style="margin-top:0"></ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section--dark hex-bg" style="padding:64px 0;text-align:center">
-    <div class="container">
-      <h2 id="ctaTitel"></h2>
-      <p class="lead" style="margin:16px auto;max-width:480px" id="ctaText"></p>
-      <a class="btn btn--primary btn--lg" href="bestell.html" style="margin-top:24px;display:inline-flex">Jetzt bestellen</a>
-    </div>
-  </section>
-</main>
-
-<footer class="footer">
-  <div class="container">
-    <div class="footer__inner">
-      <div>
-        <div class="footer__brand-name"><span data-site="name"></span><span class="footer__brand-sub">Imkerei &middot; Handarbeit &middot; Honig</span></div>
-        <p class="footer__desc">Kleine Imkerei, großer Anspruch. Jedes Glas handabgefüllt und mit Freude gemacht.</p>
-      </div>
-      <div>
-        <p class="footer__col-title">Navigation</p>
-        <ul class="footer__links" id="footerNav"></ul>
-      </div>
-      <div>
-        <p class="footer__col-title">Kontakt</p>
-        <ul class="footer__links">
-          <li><span style="font-size:.85rem;color:rgba(255,255,255,.55)" data-site="name"></span></li>
-          <li><span class="footer__link" data-site="email"></span></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer__bottom">
-      <span>&copy; <span data-site="jahr"></span> <span data-site="name"></span></span>
-      <div class="footer__legal">
-        <a class="footer__link" href="impressum.html">Impressum</a>
-        <a class="footer__link" href="datenschutz.html">Datenschutz</a>
-      </div>
-      <span class="footer__honey-mark" data-site="slogan"></span>
-    </div>
-  </div>
-</footer>
-<script src="inhalt.js"></script>
-<script src="script.js"></script>
+    <a class="game" href="sudoku.html">
+      <h2>Sudoku</h2>
+      <p>Klassisches Sudoku in drei Schwierigkeitsstufen, mit Notizen und Tipps.</p>
+    </a>
+  </main>
 </body>
 </html>
