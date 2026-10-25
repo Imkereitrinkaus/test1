@@ -116,7 +116,8 @@
 
   .board {
     display: grid;
-    grid-template-columns: repeat(9, 1fr);
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-rows: repeat(9, minmax(0, 1fr));
     width: 100%;
     max-width: 100%;
     aspect-ratio: 1;
@@ -137,6 +138,10 @@
     font-size: clamp(1.2rem, 6vw, 1.75rem);
     cursor: pointer;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
   .cell.br { border-right: 2px solid var(--ink); }
   .cell.bb { border-bottom: 2px solid var(--ink); }
