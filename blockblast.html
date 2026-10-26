@@ -190,6 +190,7 @@
     <div class="header">
       <div class="best">👑 <span id="best">0</span></div>
       <div class="header-btns">
+        <button class="btn" id="soundBtn" aria-label="Ton aus">🔊</button>
         <button class="btn" id="scoresBtn">Bestenliste</button>
         <button class="btn" id="restartBtn">Neu starten</button>
       </div>
@@ -348,6 +349,59 @@
     }
     const best = () => Math.max(score || 0, scores.length ? scores[0].score : 0);
 
+    // ---------- Ton ----------
+    const soundBtn = document.getElementById('soundBtn');
+    let audioCtx = null;
+    let soundOn = true;
+    try { soundOn = localStorage.getItem('blockblast-sound') !== 'off'; } catch (e) {}
+
+    function renderSound() {
+      soundBtn.textContent = soundOn ? '🔊' : '🔇';
+      soundBtn.setAttribute('aria-label', soundOn ? 'Ton aus' : 'Ton an');
+    }
+
+    // Muss bei einer Berührung passieren, sonst bleibt der Ton auf Handys stumm
+    function unlockAudio() {
+      if (!soundOn) return;
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      } catch (e) { audioCtx = null; }
+    }
+
+    // Kurzes Dur-Arpeggio; jede weitere Combo-Stufe klingt einen Halbton höher
+    function playJingle(level) {
+      if (!soundOn) return;
+      unlockAudio();
+      if (!audioCtx) return;
+      const base = 523.25 * Math.pow(2, Math.min(level - 2, 7) / 12);
+      const steps = [0, 4, 7, 12, 16];
+      const now = audioCtx.currentTime + 0.02;
+      steps.forEach((st, k) => {
+        const last = k === steps.length - 1;
+        const t = now + k * 0.075;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = last ? 'triangle' : 'square';
+        osc.frequency.value = base * Math.pow(2, st / 12);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(last ? 0.18 : 0.07, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + (last ? 0.5 : 0.14));
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.55);
+      });
+    }
+
+    soundBtn.addEventListener('click', () => {
+      soundOn = !soundOn;
+      try { localStorage.setItem('blockblast-sound', soundOn ? 'on' : 'off'); } catch (e) {}
+      renderSound();
+      if (soundOn) playJingle(2);
+    });
+    renderSound();
+
     for (let i = 0; i < SIZE * SIZE; i++) {
       const d = document.createElement('div');
       d.className = 'cell';
@@ -481,6 +535,7 @@
     function startDrag(e, index, sourceEl) {
       if (drag || over || overlay.classList.contains('show')) return;
       e.preventDefault();
+      unlockAudio();
       const piece = pieces[index];
       const size = boardCellSize();
       const gap = boardGap();
@@ -577,7 +632,7 @@
       const shape = piece.shape;
       for (const [r, c] of shape.cells) grid[r0 + r][c0 + c] = piece.color;
       piece.used = true;
-      score += shape.cells.length;
+      score += shape.cells.length * 5;
 
       const { rows, cols } = linesAfter({ cells: [] }, 0, 0);
       const lines = rows.length + cols.length;
@@ -585,7 +640,7 @@
       if (lines > 0) {
         combo = movesSinceClear <= 2 ? combo + 1 : 1;
         movesSinceClear = 0;
-        const gained = lines * 10 * lines * combo;
+        const gained = lines * 10 * lines * combo * 5;
         score += gained;
 
         const toClear = new Set();
@@ -606,6 +661,7 @@
         if (combo > 1) label = `Combo x${combo}  ` + label;
         else if (lines > 1) label = `${lines} Linien!  ` + label;
         popup(label, r0 + shape.rows / 2, c0 + shape.cols / 2);
+        if (combo > 1) playJingle(combo);
       } else {
         movesSinceClear++;
         if (movesSinceClear > 2) combo = 0;
