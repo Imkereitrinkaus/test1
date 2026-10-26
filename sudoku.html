@@ -83,7 +83,7 @@
 
   .levels {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     background: var(--sheet);
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -315,6 +315,7 @@
     <button id="lvl-easy" data-level="easy" aria-pressed="true">Leicht</button>
     <button id="lvl-medium" data-level="medium" aria-pressed="false">Mittel</button>
     <button id="lvl-hard" data-level="hard" aria-pressed="false">Schwer</button>
+    <button id="lvl-profi" data-level="profi" aria-pressed="false">Profi</button>
   </div>
 
   <div class="stats">
@@ -374,6 +375,7 @@
       <button id="sc-easy" data-level="easy" aria-pressed="true">Leicht</button>
       <button id="sc-medium" data-level="medium" aria-pressed="false">Mittel</button>
       <button id="sc-hard" data-level="hard" aria-pressed="false">Schwer</button>
+      <button id="sc-profi" data-level="profi" aria-pressed="false">Profi</button>
     </div>
     <ol class="scores" id="scoresList"></ol>
     <div class="actions">
@@ -457,6 +459,7 @@
     easy:   { name: 'Leicht', clues: 40 },
     medium: { name: 'Mittel', clues: 32 },
     hard:   { name: 'Schwer', clues: 25 },
+    profi:  { name: 'Profi',  clues: 0 },
   };
   const MAX_MISTAKES = 3;
   const MAX_HINTS = 3;
@@ -525,7 +528,63 @@
     return { count, solution: first };
   }
 
+  const UNITS = [];
+  for (let k = 0; k < 9; k++) {
+    UNITS.push([...Array(81).keys()].filter(i => rowOf(i) === k));
+    UNITS.push([...Array(81).keys()].filter(i => colOf(i) === k));
+    UNITS.push([...Array(81).keys()].filter(i => boxOf(i) === k));
+  }
+
+  // Löst nur mit einfachen Schritten (einzige mögliche Zahl in einem Feld oder
+  // einzige mögliche Stelle für eine Zahl). Klappt das, ist das Rätsel nicht profi-tauglich.
+  function solvableWithSingles(puzzle) {
+    const b = puzzle.slice();
+    for (;;) {
+      let progress = false;
+      const masks = b.map((v, i) => {
+        if (v) return 0;
+        let m = 0x3fe;
+        for (const j of PEERS[i]) if (b[j]) m &= ~(1 << b[j]);
+        return m;
+      });
+      for (let i = 0; i < 81; i++) {
+        if (b[i]) continue;
+        if (!masks[i]) return false;
+        if (popcount(masks[i]) === 1) { b[i] = Math.log2(masks[i]); progress = true; }
+      }
+      if (!progress) {
+        for (const unit of UNITS) {
+          for (let d = 1; d <= 9; d++) {
+            if (unit.some(i => b[i] === d)) continue;
+            const spots = unit.filter(i => !b[i] && (masks[i] & (1 << d)));
+            if (spots.length === 1) { b[spots[0]] = d; progress = true; }
+          }
+        }
+      }
+      if (!progress) return b.every(Boolean);
+    }
+  }
+
+  // Profi: so viele Vorgaben wie möglich entfernen und nur Rätsel nehmen,
+  // die sich mit einfachen Schritten allein nicht lösen lassen
+  function generateProfi() {
+    let fallback = null;
+    for (let tries = 0; tries < 40; tries++) {
+      const solution = solve(Array(81).fill(0), 1, true).solution;
+      const puzzle = solution.slice();
+      for (const i of shuffle([...Array(81).keys()])) {
+        const saved = puzzle[i];
+        puzzle[i] = 0;
+        if (solve(puzzle, 2, false).count !== 1) puzzle[i] = saved;
+      }
+      if (!solvableWithSingles(puzzle)) return { puzzle, solution };
+      fallback = { puzzle, solution };
+    }
+    return fallback;
+  }
+
   function generate(level) {
+    if (level === 'profi') return generateProfi();
     const solution = solve(Array(81).fill(0), 1, true).solution;
     const puzzle = solution.slice();
     let clues = 81;
