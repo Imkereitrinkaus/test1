@@ -271,7 +271,7 @@
   .scores { list-style: none; margin: 0; padding: 0; text-align: left; font-variant-numeric: tabular-nums; }
   .scores li {
     display: grid;
-    grid-template-columns: 2em 1fr auto;
+    grid-template-columns: 2em minmax(0, 1fr) auto auto;
     gap: 10px;
     align-items: baseline;
     padding: 9px 2px;
@@ -281,6 +281,19 @@
   .scores .rank { color: var(--muted); }
   .scores .time { font-weight: 600; font-size: 1.1rem; }
   .scores .meta { color: var(--muted); font-size: .78rem; text-align: right; }
+  .scores .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .name-field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+  .name-field span { color: var(--muted); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; }
+  .name-field input {
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .name-field input:focus { outline: none; border-color: var(--pen); }
   .scores .empty { display: block; color: var(--muted); text-align: center; border: none; padding: 16px 0; }
   .dialog .levels { margin-top: 4px; }
 
@@ -343,6 +356,10 @@
     <h2 id="dlgTitle">Gelöst!</h2>
     <p id="dlgText">Schwierigkeit Leicht</p>
     <div class="result" id="dlgResult">0:00</div>
+    <label class="name-field" id="nameField" hidden>
+      <span>Name für die Bestenliste</span>
+      <input id="playerName" type="text" maxlength="16" autocomplete="nickname" placeholder="Dein Name">
+    </label>
     <div class="actions">
       <button class="secondary" id="dlgClose">Feld ansehen</button>
       <button class="primary" id="dlgNew">Neues Spiel</button>
@@ -445,6 +462,9 @@
   const MAX_HINTS = 3;
   const store = createStore('sudoku-');
   let scores = store.load('scores') || {};
+  let playerName = store.load('name') || '';
+  let lastEntry = null;
+  const nameInput = document.getElementById('playerName');
 
   const rowOf = i => Math.floor(i / 9);
   const colOf = i => i % 9;
@@ -576,7 +596,8 @@
   function recordWin() {
     if (S.recorded) return 0;
     S.recorded = true;
-    const entry = { seconds: S.seconds, mistakes: S.mistakes, hints: MAX_HINTS - S.hints, date: Date.now() };
+    const entry = { seconds: S.seconds, mistakes: S.mistakes, hints: MAX_HINTS - S.hints, date: Date.now(), name: playerName };
+    lastEntry = { level: S.level, entry };
     const list = (scores[S.level] || []).concat(entry);
     list.sort((a, b) => a.seconds - b.seconds || a.date - b.date);
     scores[S.level] = list.slice(0, 10);
@@ -607,8 +628,17 @@
       if (e.mistakes) extras.push(`${e.mistakes} Fehler`);
       if (e.hints) extras.push(`${e.hints} Tipp${e.hints > 1 ? 's' : ''}`);
       const date = new Date(e.date).toLocaleDateString('de-DE');
-      li.innerHTML = `<span class="rank">${i + 1}.</span><span class="time">${fmt(e.seconds)}</span>` +
-        `<span class="meta">${date}${extras.length ? '<br>' + extras.join(', ') : ''}</span>`;
+      [[`${i + 1}.`, 'rank'], [e.name || '–', 'name'], [fmt(e.seconds), 'time']].forEach(([text, cls]) => {
+        const span = document.createElement('span');
+        span.className = cls;
+        span.textContent = text;
+        li.appendChild(span);
+      });
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = date;
+      if (extras.length) meta.append(document.createElement('br'), extras.join(', '));
+      li.appendChild(meta);
       listEl.appendChild(li);
     });
   }
@@ -743,6 +773,8 @@
         ? `Neue Bestzeit auf ${LEVELS[S.level].name}!`
         : `${LEVELS[S.level].name} gelöst, Platz ${rank} in der Bestenliste`;
     }
+    document.getElementById('nameField').hidden = !(won && rank);
+    nameInput.value = playerName;
     overlay.hidden = false;
     document.getElementById('dlgNew').focus();
   }
@@ -807,14 +839,31 @@
   document.getElementById('eraseBtn').addEventListener('click', erase);
   document.getElementById('notesBtn').addEventListener('click', toggleNotes);
   document.getElementById('hintBtn').addEventListener('click', hint);
-  document.getElementById('dlgNew').addEventListener('click', () => newGame(S.level));
-  document.getElementById('dlgClose').addEventListener('click', () => { overlay.hidden = true; });
+  // Übernimmt den eingetippten Namen in den Eintrag des gerade gelösten Rätsels
+  function commitName() {
+    const list = lastEntry && scores[lastEntry.level];
+    if (!list || !list.includes(lastEntry.entry)) return;
+    const name = nameInput.value.trim().slice(0, 16);
+    if (name) {
+      playerName = name;
+      store.save('name', name);
+    }
+    if (name === (lastEntry.entry.name || '')) return;
+    lastEntry.entry.name = name;
+    store.save('scores', scores);
+  }
+
+  document.getElementById('dlgNew').addEventListener('click', () => { commitName(); newGame(S.level); });
+  document.getElementById('dlgClose').addEventListener('click', () => { commitName(); overlay.hidden = true; });
+  nameInput.addEventListener('change', commitName);
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') nameInput.blur(); });
   document.getElementById('scoresBtn').addEventListener('click', () => showScores());
   document.getElementById('scoresClose').addEventListener('click', () => { scoresOverlay.hidden = true; });
   document.querySelectorAll('#scoresOverlay .levels button').forEach(b =>
     b.addEventListener('click', () => { scoresLevel = b.dataset.level; renderScores(); }));
 
   document.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('input')) return;
     if (e.ctrlKey || e.metaKey || e.altKey) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
       return;
@@ -863,6 +912,7 @@
     } else {
       newGame('easy');
     }
+    store.sync('name', v => { if (typeof v === 'string') playerName = v; });
     store.sync('scores', v => { if (v && typeof v === 'object') { scores = v; if (!scoresOverlay.hidden) renderScores(); } });
     store.sync('state', v => restore(v));
   }

@@ -173,7 +173,7 @@
     .scores { list-style: none; margin: 4px 0 18px; padding: 0; min-width: 240px; text-align: left; }
     .scores li {
       display: grid;
-      grid-template-columns: 2em 1fr auto;
+      grid-template-columns: 2em minmax(0, 1fr) auto auto;
       gap: 10px;
       padding: 8px 4px;
       border-bottom: 1px solid rgba(255,255,255,.08);
@@ -182,6 +182,20 @@
     .scores li.mine { color: var(--accent); font-weight: 700; }
     .scores .rank { color: var(--muted); }
     .scores .date { color: var(--muted); font-size: .85rem; align-self: center; }
+    .scores .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    [hidden] { display: none !important; }
+    .name-field { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 16px; text-align: left; }
+    .name-field span { color: var(--muted); font-size: .85rem; }
+    .name-field input {
+      font: inherit;
+      font-size: 16px;
+      color: var(--text);
+      background: var(--cell);
+      border: 1px solid var(--cell-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .name-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
     .scores .empty { display: block; color: var(--muted); border: none; text-align: center; }
   </style>
 </head>
@@ -210,6 +224,10 @@
       <p>Punkte</p>
       <div class="final" id="finalScore">0</div>
       <p id="bestNote"></p>
+      <label class="name-field" id="nameField" hidden>
+        <span>Name für die Bestenliste</span>
+        <input id="playerName" type="text" maxlength="16" autocomplete="nickname" placeholder="Dein Name">
+      </label>
       <div class="actions">
         <button class="btn secondary" id="viewBtn">Feld ansehen</button>
         <button class="btn" id="againBtn">Nochmal spielen</button>
@@ -337,6 +355,9 @@
     // Eigene Liste seit der Umstellung auf fünffache Punkte; ältere Einträge zählen nicht mehr
     const SCORES_KEY = 'scores-x5';
     let scores = store.load(SCORES_KEY) || [];
+    let playerName = store.load('name') || '';
+    let lastEntry = null;
+    const nameInput = document.getElementById('playerName');
     let cellEls = [];
 
     const best = () => Math.max(score || 0, scores.length ? scores[0].score : 0);
@@ -675,7 +696,8 @@
     // Trägt das beendete Spiel ein und liefert den Platz (oder 0, wenn nicht unter den besten 10)
     function recordScore() {
       if (score <= 0) return 0;
-      const entry = { score, date: Date.now() };
+      const entry = { score, date: Date.now(), name: playerName };
+      lastEntry = entry;
       scores.push(entry);
       scores.sort((a, b) => b.score - a.score);
       scores = scores.slice(0, 10);
@@ -720,7 +742,12 @@
         const li = document.createElement('li');
         if (latest && s.date === latest) li.className = 'mine';
         const date = s.date ? new Date(s.date).toLocaleDateString('de-DE') : '–';
-        li.innerHTML = `<span class="rank">${i + 1}.</span><span>${s.score}</span><span class="date">${date}</span>`;
+        [[`${i + 1}.`, 'rank'], [s.name || '–', 'name'], [s.score, 'pts'], [date, 'date']].forEach(([text, cls]) => {
+          const span = document.createElement('span');
+          span.className = cls;
+          span.textContent = text;
+          li.appendChild(span);
+        });
         list.appendChild(li);
       });
       scoresOverlay.classList.add('show');
@@ -744,8 +771,23 @@
       if (!over) return;
       document.getElementById('finalScore').textContent = score;
       document.getElementById('bestNote').textContent =
-        rank === 1 ? '🎉 Neuer Rekord!' : rank ? `Platz ${rank} in deiner Bestenliste` : `Rekord: ${best()}`;
+        rank === 1 ? '🎉 Neuer Rekord!' : rank ? `Platz ${rank} in der Bestenliste` : `Rekord: ${best()}`;
+      document.getElementById('nameField').hidden = !rank;
+      nameInput.value = playerName;
       overlay.classList.add('show');
+    }
+
+    // Übernimmt den eingetippten Namen in den Eintrag des gerade beendeten Spiels
+    function commitName() {
+      if (!lastEntry || !scores.includes(lastEntry)) return;
+      const name = nameInput.value.trim().slice(0, 16);
+      if (name) {
+        playerName = name;
+        store.save('name', name);
+      }
+      if (name === (lastEntry.name || '')) return;
+      lastEntry.name = name;
+      store.save(SCORES_KEY, scores);
     }
 
     function start() {
@@ -761,14 +803,17 @@
     }
 
     document.getElementById('restartBtn').addEventListener('click', start);
-    document.getElementById('againBtn').addEventListener('click', start);
-    document.getElementById('viewBtn').addEventListener('click', () => overlay.classList.remove('show'));
+    document.getElementById('againBtn').addEventListener('click', () => { commitName(); start(); });
+    document.getElementById('viewBtn').addEventListener('click', () => { commitName(); overlay.classList.remove('show'); });
+    nameInput.addEventListener('change', commitName);
+    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') nameInput.blur(); });
     document.getElementById('scoresBtn').addEventListener('click', showScores);
     document.getElementById('scoresClose').addEventListener('click', () => scoresOverlay.classList.remove('show'));
     window.addEventListener('resize', () => { if (pieces) renderTray(); });
 
     if (!restore(store.load('state'))) start();
     store.sync(SCORES_KEY, v => { if (Array.isArray(v)) { scores = v; render(); } });
+    store.sync('name', v => { if (typeof v === 'string') playerName = v; });
     store.sync('state', v => { if (!drag) restore(v); });
   })();
   </script>
