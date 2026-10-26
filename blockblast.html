@@ -161,15 +161,41 @@
     .dialog .final { font-size: 2.4rem; font-weight: 800; color: var(--text); margin: 8px 0 16px; }
     .dialog .btn { background: var(--accent); color: #222; font-size: 1.1rem; padding: 12px 28px; }
     .hint { color: var(--muted); font-size: .85rem; text-align: center; }
+    .header-btns { display: flex; gap: 8px; }
+    .banner {
+      color: var(--accent);
+      font-weight: 600;
+      text-align: center;
+      font-size: .95rem;
+    }
+    .dialog .actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .dialog .btn.secondary { background: rgba(255,255,255,.12); color: var(--text); }
+    .scores { list-style: none; margin: 4px 0 18px; padding: 0; min-width: 240px; text-align: left; }
+    .scores li {
+      display: grid;
+      grid-template-columns: 2em 1fr auto;
+      gap: 10px;
+      padding: 8px 4px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      font-variant-numeric: tabular-nums;
+    }
+    .scores li.mine { color: var(--accent); font-weight: 700; }
+    .scores .rank { color: var(--muted); }
+    .scores .date { color: var(--muted); font-size: .85rem; align-self: center; }
+    .scores .empty { display: block; color: var(--muted); border: none; text-align: center; }
   </style>
 </head>
 <body>
   <div class="game">
     <div class="header">
       <div class="best">👑 <span id="best">0</span></div>
-      <button class="btn" id="restartBtn">Neu starten</button>
+      <div class="header-btns">
+        <button class="btn" id="scoresBtn">Bestenliste</button>
+        <button class="btn" id="restartBtn">Neu starten</button>
+      </div>
     </div>
     <div class="score" id="score">0</div>
+    <div class="banner" id="banner" hidden>Spiel beendet</div>
     <div class="board" id="board"></div>
     <div class="tray" id="tray">
       <div class="slot"></div><div class="slot"></div><div class="slot"></div>
@@ -183,12 +209,92 @@
       <p>Punkte</p>
       <div class="final" id="finalScore">0</div>
       <p id="bestNote"></p>
-      <button class="btn" id="againBtn">Nochmal spielen</button>
+      <div class="actions">
+        <button class="btn secondary" id="viewBtn">Feld ansehen</button>
+        <button class="btn" id="againBtn">Nochmal spielen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="scoresOverlay">
+    <div class="dialog">
+      <h2>Bestenliste</h2>
+      <ol class="scores" id="scoresList"></ol>
+      <button class="btn" id="scoresClose">Schließen</button>
     </div>
   </div>
 
   <script>
   (() => {
+    // Speicher: immer im Browser. Als Claude-Artifact geöffnet zusätzlich im eigenen
+    // Konto, damit Spielstand und Bestenliste auch nach dem Schließen der App bleiben.
+    function createStore(prefix) {
+      let remote = null;
+      const ready = (async () => {
+        try {
+          if (!window.claude || !window.claude.use) return;
+          const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+          const id = db && user ? await user.id() : null;
+          if (id) remote = db.collection('data/users/' + id);
+        } catch (e) { remote = null; }
+      })();
+      const queued = {}, busy = {};
+
+      async function push(key) {
+        if (busy[key] || !remote) return;
+        busy[key] = true;
+        while (queued[key] && remote) {
+          const rec = queued[key];
+          delete queued[key];
+          try {
+            await remote.doc(prefix + key).set(rec);
+          } catch (e) {
+            if (!e || e.code !== 'unavailable') remote = null;
+          }
+        }
+        busy[key] = false;
+      }
+
+      function readLocal(key) {
+        try {
+          const r = JSON.parse(localStorage.getItem(prefix + key));
+          return r && typeof r.t === 'number' ? r : null;
+        } catch (e) { return null; }
+      }
+
+      return {
+        load(key) {
+          const r = readLocal(key);
+          return r ? r.v : null;
+        },
+        save(key, v, localOnly) {
+          const rec = { v, t: Date.now() };
+          try { localStorage.setItem(prefix + key, JSON.stringify(rec)); } catch (e) {}
+          if (!localOnly) {
+            queued[key] = rec;
+            ready.then(() => push(key));
+          }
+        },
+        // Gleicht mit dem Konto ab: der neuere Stand gewinnt
+        async sync(key, apply) {
+          await ready;
+          if (!remote) return;
+          let snap;
+          try { snap = await remote.doc(prefix + key).get(); } catch (e) { return; }
+          const r = snap.exists ? snap.data() : null;
+          const l = readLocal(key);
+          if (r && typeof r.t === 'number' && (!l || r.t > l.t)) {
+            const copy = JSON.parse(JSON.stringify(r));
+            try { localStorage.setItem(prefix + key, JSON.stringify(copy)); } catch (e) {}
+            apply(copy.v);
+          } else if (l && (!r || l.t > r.t)) {
+            queued[key] = l;
+            push(key);
+          }
+        },
+      };
+    }
+
     const SIZE = 8;
     const COLORS = ['#ff5e5b', '#ffb84c', '#ffe156', '#5be07a', '#3fc1ff', '#7a6cff', '#e86cff', '#ff7fb0'];
 
@@ -223,10 +329,24 @@
     const bestEl = document.getElementById('best');
     const overlay = document.getElementById('overlay');
 
-    let grid, pieces, score, best, combo, movesSinceClear;
+    const store = createStore('blockblast-');
+    const bannerEl = document.getElementById('banner');
+    const scoresOverlay = document.getElementById('scoresOverlay');
+    let grid, pieces, score, combo, movesSinceClear, over;
+    let scores = store.load('scores') || [];
     let cellEls = [];
 
-    try { best = parseInt(localStorage.getItem('blockblast-best'), 10) || 0; } catch (e) { best = 0; }
+    // Rekord aus der ersten Version übernehmen
+    if (!scores.length) {
+      try {
+        const old = parseInt(localStorage.getItem('blockblast-best'), 10);
+        if (old > 0) {
+          scores = [{ score: old, date: null }];
+          store.save('scores', scores);
+        }
+      } catch (e) {}
+    }
+    const best = () => Math.max(score || 0, scores.length ? scores[0].score : 0);
 
     for (let i = 0; i < SIZE * SIZE; i++) {
       const d = document.createElement('div');
@@ -284,7 +404,9 @@
         }
       }
       scoreEl.textContent = score;
-      bestEl.textContent = best;
+      bestEl.textContent = best();
+      bannerEl.hidden = !over;
+      bannerEl.textContent = `Spiel beendet · ${score} Punkte`;
     }
 
     function randomPiece() {
@@ -338,7 +460,7 @@
         const piece = pieces[i];
         if (!piece || piece.used) return;
         const el = buildPieceEl(piece, trayCellSize(piece.shape), 'piece');
-        if (!fitsAnywhere(piece.shape)) el.classList.add('disabled');
+        if (over || !fitsAnywhere(piece.shape)) el.classList.add('disabled');
         el.addEventListener('pointerdown', e => startDrag(e, i, el));
         slot.appendChild(el);
       });
@@ -357,7 +479,7 @@
     let drag = null;
 
     function startDrag(e, index, sourceEl) {
-      if (drag || overlay.classList.contains('show')) return;
+      if (drag || over || overlay.classList.contains('show')) return;
       e.preventDefault();
       const piece = pieces[index];
       const size = boardCellSize();
@@ -489,18 +611,71 @@
         if (movesSinceClear > 2) combo = 0;
       }
 
-      if (score > best) {
-        best = score;
-        try { localStorage.setItem('blockblast-best', best); } catch (e) {}
-      }
-
       if (pieces.every(p => p.used)) newPieces();
       else renderTray();
-      render();
 
       if (pieces.every(p => p.used || !fitsAnywhere(p.shape))) {
-        setTimeout(gameOver, 600);
+        over = true;
+        const rank = recordScore();
+        renderTray();
+        setTimeout(() => gameOver(rank), 600);
       }
+      render();
+      saveState();
+    }
+
+    // Trägt das beendete Spiel ein und liefert den Platz (oder 0, wenn nicht unter den besten 10)
+    function recordScore() {
+      if (score <= 0) return 0;
+      const entry = { score, date: Date.now() };
+      scores.push(entry);
+      scores.sort((a, b) => b.score - a.score);
+      scores = scores.slice(0, 10);
+      store.save('scores', scores);
+      return scores.indexOf(entry) + 1;
+    }
+
+    function saveState() {
+      store.save('state', {
+        grid, score, combo, movesSinceClear, over,
+        pieces: pieces.map(p => ({ s: SHAPES.indexOf(p.shape), c: p.color, u: p.used })),
+      });
+    }
+
+    function restore(st) {
+      if (!st || !Array.isArray(st.grid) || st.grid.length !== SIZE || !Array.isArray(st.pieces)) return false;
+      const restored = st.pieces.map(p => ({ shape: SHAPES[p.s], color: p.c, used: !!p.u }));
+      if (restored.length !== 3 || restored.some(p => !p.shape)) return false;
+      grid = st.grid;
+      pieces = restored;
+      score = st.score || 0;
+      combo = st.combo || 0;
+      movesSinceClear = st.movesSinceClear || 0;
+      over = !!st.over;
+      overlay.classList.remove('show');
+      render();
+      renderTray();
+      return true;
+    }
+
+    function showScores() {
+      const list = document.getElementById('scoresList');
+      list.innerHTML = '';
+      if (!scores.length) {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = 'Noch keine beendeten Spiele.';
+        list.appendChild(li);
+      }
+      const latest = Math.max(0, ...scores.map(s => s.date || 0));
+      scores.forEach((s, i) => {
+        const li = document.createElement('li');
+        if (latest && s.date === latest) li.className = 'mine';
+        const date = s.date ? new Date(s.date).toLocaleDateString('de-DE') : '–';
+        li.innerHTML = `<span class="rank">${i + 1}.</span><span>${s.score}</span><span class="date">${date}</span>`;
+        list.appendChild(li);
+      });
+      scoresOverlay.classList.add('show');
     }
 
     function popup(text, r, c) {
@@ -517,10 +692,11 @@
       setTimeout(() => el.remove(), 1000);
     }
 
-    function gameOver() {
+    function gameOver(rank) {
+      if (!over) return;
       document.getElementById('finalScore').textContent = score;
       document.getElementById('bestNote').textContent =
-        score >= best && score > 0 ? '🎉 Neuer Rekord!' : `Rekord: ${best}`;
+        rank === 1 ? '🎉 Neuer Rekord!' : rank ? `Platz ${rank} in deiner Bestenliste` : `Rekord: ${best()}`;
       overlay.classList.add('show');
     }
 
@@ -529,16 +705,23 @@
       score = 0;
       combo = 0;
       movesSinceClear = 0;
+      over = false;
       overlay.classList.remove('show');
       render();
       newPieces();
+      saveState();
     }
 
     document.getElementById('restartBtn').addEventListener('click', start);
     document.getElementById('againBtn').addEventListener('click', start);
+    document.getElementById('viewBtn').addEventListener('click', () => overlay.classList.remove('show'));
+    document.getElementById('scoresBtn').addEventListener('click', showScores);
+    document.getElementById('scoresClose').addEventListener('click', () => scoresOverlay.classList.remove('show'));
     window.addEventListener('resize', () => { if (pieces) renderTray(); });
 
-    start();
+    if (!restore(store.load('state'))) start();
+    store.sync('scores', v => { if (Array.isArray(v)) { scores = v; render(); } });
+    store.sync('state', v => { if (!drag) restore(v); });
   })();
   </script>
 </body>

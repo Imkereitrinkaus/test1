@@ -259,6 +259,32 @@
   }
   .secondary { border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 10px 20px; font-weight: 600; cursor: pointer; }
 
+  .top-btns { display: flex; gap: 8px; }
+  .banner {
+    background: var(--pen-soft);
+    color: var(--pen);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .banner.lost { background: var(--error-soft); color: var(--error); }
+  .scores { list-style: none; margin: 0; padding: 0; text-align: left; font-variant-numeric: tabular-nums; }
+  .scores li {
+    display: grid;
+    grid-template-columns: 2em 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--line);
+  }
+  .scores li.mine { color: var(--pen); font-weight: 600; }
+  .scores .rank { color: var(--muted); }
+  .scores .time { font-family: var(--font-hand); font-weight: 700; font-size: 1.25rem; }
+  .scores .meta { color: var(--muted); font-size: .78rem; text-align: right; }
+  .scores .empty { display: block; color: var(--muted); text-align: center; border: none; padding: 16px 0; }
+  .dialog .levels { margin-top: 4px; }
+
   @media (prefers-reduced-motion: reduce) { .cell.flash { animation: none; } }
 </style>
 </head>
@@ -267,7 +293,10 @@
 <div class="app">
   <div class="top">
     <h1>Sudoku</h1>
-    <button class="new-btn" id="newBtn">Neues Spiel</button>
+    <div class="top-btns">
+      <button class="new-btn" id="scoresBtn">Bestenliste</button>
+      <button class="new-btn" id="newBtn">Neues Spiel</button>
+    </div>
   </div>
 
   <div class="levels" role="group" aria-label="Schwierigkeit">
@@ -281,6 +310,8 @@
     <span id="mistakesWrap">Fehler <b id="mistakes">0</b> / 3</span>
     <span>Zeit <b id="time">0:00</b></span>
   </div>
+
+  <div class="banner" id="banner" hidden></div>
 
   <div class="board" id="board" role="grid" aria-label="Sudoku-Feld"></div>
 
@@ -320,8 +351,92 @@
   </div>
 </div>
 
+<div class="overlay" id="scoresOverlay" hidden>
+  <div class="dialog">
+    <h2>Bestenliste</h2>
+    <div class="levels" role="group" aria-label="Schwierigkeit der Bestenliste">
+      <button id="sc-easy" data-level="easy" aria-pressed="true">Leicht</button>
+      <button id="sc-medium" data-level="medium" aria-pressed="false">Mittel</button>
+      <button id="sc-hard" data-level="hard" aria-pressed="false">Schwer</button>
+    </div>
+    <ol class="scores" id="scoresList"></ol>
+    <div class="actions">
+      <button class="primary" id="scoresClose">Schließen</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
+  // Speicher: immer im Browser. Als Claude-Artifact geöffnet zusätzlich im eigenen
+  // Konto, damit Spielstand und Bestenliste auch nach dem Schließen der App bleiben.
+  function createStore(prefix) {
+    let remote = null;
+    const ready = (async () => {
+      try {
+        if (!window.claude || !window.claude.use) return;
+        const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+        const id = db && user ? await user.id() : null;
+        if (id) remote = db.collection('data/users/' + id);
+      } catch (e) { remote = null; }
+    })();
+    const queued = {}, busy = {};
+
+    async function push(key) {
+      if (busy[key] || !remote) return;
+      busy[key] = true;
+      while (queued[key] && remote) {
+        const rec = queued[key];
+        delete queued[key];
+        try {
+          await remote.doc(prefix + key).set(rec);
+        } catch (e) {
+          if (!e || e.code !== 'unavailable') remote = null;
+        }
+      }
+      busy[key] = false;
+    }
+
+    function readLocal(key) {
+      try {
+        const r = JSON.parse(localStorage.getItem(prefix + key));
+        return r && typeof r.t === 'number' ? r : null;
+      } catch (e) { return null; }
+    }
+
+    return {
+      load(key) {
+        const r = readLocal(key);
+        return r ? r.v : null;
+      },
+      save(key, v, localOnly) {
+        const rec = { v, t: Date.now() };
+        try { localStorage.setItem(prefix + key, JSON.stringify(rec)); } catch (e) {}
+        if (!localOnly) {
+          queued[key] = rec;
+          ready.then(() => push(key));
+        }
+      },
+      // Gleicht mit dem Konto ab: der neuere Stand gewinnt
+      async sync(key, apply) {
+        await ready;
+        if (!remote) return;
+        let snap;
+        try { snap = await remote.doc(prefix + key).get(); } catch (e) { return; }
+        const r = snap.exists ? snap.data() : null;
+        const l = readLocal(key);
+        if (r && typeof r.t === 'number' && (!l || r.t > l.t)) {
+          const copy = JSON.parse(JSON.stringify(r));
+          try { localStorage.setItem(prefix + key, JSON.stringify(copy)); } catch (e) {}
+          apply(copy.v);
+        } else if (l && (!r || l.t > r.t)) {
+          queued[key] = l;
+          push(key);
+        }
+      },
+    };
+  }
+
   const LEVELS = {
     easy:   { name: 'Leicht', clues: 40 },
     medium: { name: 'Mittel', clues: 32 },
@@ -329,7 +444,8 @@
   };
   const MAX_MISTAKES = 3;
   const MAX_HINTS = 3;
-  const STORE_KEY = 'sudoku-state-v1';
+  const store = createStore('sudoku-');
+  let scores = store.load('scores') || {};
 
   const rowOf = i => Math.floor(i / 9);
   const colOf = i => i % 9;
@@ -453,8 +569,55 @@
     numBtns.push(b);
   }
 
-  function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+  function save(localOnly) {
+    store.save('state', S, localOnly);
+  }
+
+  // Trägt ein gelöstes Rätsel ein und liefert den Platz (oder 0, wenn nicht unter den besten 10)
+  function recordWin() {
+    if (S.recorded) return 0;
+    S.recorded = true;
+    const entry = { seconds: S.seconds, mistakes: S.mistakes, hints: MAX_HINTS - S.hints, date: Date.now() };
+    const list = (scores[S.level] || []).concat(entry);
+    list.sort((a, b) => a.seconds - b.seconds || a.date - b.date);
+    scores[S.level] = list.slice(0, 10);
+    store.save('scores', scores);
+    return scores[S.level].indexOf(entry) + 1;
+  }
+
+  let scoresLevel = 'easy';
+  const scoresOverlay = document.getElementById('scoresOverlay');
+
+  function renderScores() {
+    document.querySelectorAll('#scoresOverlay .levels button').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.level === scoresLevel)));
+    const listEl = document.getElementById('scoresList');
+    listEl.innerHTML = '';
+    const list = scores[scoresLevel] || [];
+    if (!list.length) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = `Noch kein Rätsel auf ${LEVELS[scoresLevel].name} gelöst.`;
+      listEl.appendChild(li);
+    }
+    const latest = Math.max(0, ...list.map(e => e.date));
+    list.forEach((e, i) => {
+      const li = document.createElement('li');
+      if (e.date === latest) li.className = 'mine';
+      const extras = [];
+      if (e.mistakes) extras.push(`${e.mistakes} Fehler`);
+      if (e.hints) extras.push(`${e.hints} Tipp${e.hints > 1 ? 's' : ''}`);
+      const date = new Date(e.date).toLocaleDateString('de-DE');
+      li.innerHTML = `<span class="rank">${i + 1}.</span><span class="time">${fmt(e.seconds)}</span>` +
+        `<span class="meta">${date}${extras.length ? '<br>' + extras.join(', ') : ''}</span>`;
+      listEl.appendChild(li);
+    });
+  }
+
+  function showScores(level) {
+    scoresLevel = level || S.level;
+    renderScores();
+    scoresOverlay.hidden = false;
   }
 
   function newGame(level) {
@@ -479,7 +642,7 @@
       if (S.done || document.hidden) return;
       S.seconds++;
       document.getElementById('time').textContent = fmt(S.seconds);
-      if (S.seconds % 5 === 0) save();
+      if (S.seconds % 5 === 0) save(true);
     }, 1000);
   }
 
@@ -559,7 +722,8 @@
   function afterMove() {
     if (S.values.every((v, k) => v === S.solution[k])) {
       S.done = true;
-      showDialog(true);
+      S.won = true;
+      showDialog(true, recordWin());
     } else if (S.mistakes >= MAX_MISTAKES) {
       S.done = true;
       showDialog(false);
@@ -568,13 +732,18 @@
     save();
   }
 
-  function showDialog(won) {
+  function showDialog(won, rank) {
     document.getElementById('dlgTitle').textContent = won ? 'Gelöst!' : 'Drei Fehler';
     document.getElementById('dlgText').textContent = won
       ? `${LEVELS[S.level].name} geschafft in`
       : 'Das Spiel ist vorbei. Versuch es mit einem neuen Rätsel.';
     document.getElementById('dlgResult').textContent = won ? fmt(S.seconds) : '';
     document.getElementById('dlgResult').hidden = !won;
+    if (won && rank) {
+      document.getElementById('dlgText').textContent = rank === 1
+        ? `Neue Bestzeit auf ${LEVELS[S.level].name}!`
+        : `${LEVELS[S.level].name} gelöst, Platz ${rank} in der Bestenliste`;
+    }
     overlay.hidden = false;
     document.getElementById('dlgNew').focus();
   }
@@ -613,7 +782,7 @@
       b.disabled = left === 0 || S.done;
     });
 
-    document.querySelectorAll('.levels button').forEach(b =>
+    document.querySelectorAll('.app .levels button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.level === S.level)));
     document.getElementById('givens').textContent = S.puzzle.filter(Boolean).length;
     document.getElementById('mistakes').textContent = S.mistakes;
@@ -622,11 +791,17 @@
     document.getElementById('hintsLeft').textContent = S.hints;
     document.getElementById('notesBtn').setAttribute('aria-pressed', String(notesMode));
     document.getElementById('notesState').textContent = notesMode ? 'an' : 'aus';
+    const banner = document.getElementById('banner');
+    banner.hidden = !S.done;
+    banner.classList.toggle('lost', S.done && !S.won);
+    banner.textContent = S.won
+      ? `Gelöst in ${fmt(S.seconds)} · ${LEVELS[S.level].name}`
+      : 'Spiel beendet nach 3 Fehlern';
   }
 
   function toggleNotes() { notesMode = !notesMode; render(); }
 
-  document.querySelectorAll('.levels button').forEach(b =>
+  document.querySelectorAll('.app .levels button').forEach(b =>
     b.addEventListener('click', () => newGame(b.dataset.level)));
   document.getElementById('newBtn').addEventListener('click', () => newGame(S.level));
   document.getElementById('undoBtn').addEventListener('click', undo);
@@ -635,6 +810,10 @@
   document.getElementById('hintBtn').addEventListener('click', hint);
   document.getElementById('dlgNew').addEventListener('click', () => newGame(S.level));
   document.getElementById('dlgClose').addEventListener('click', () => { overlay.hidden = true; });
+  document.getElementById('scoresBtn').addEventListener('click', () => showScores());
+  document.getElementById('scoresClose').addEventListener('click', () => { scoresOverlay.hidden = true; });
+  document.querySelectorAll('#scoresOverlay .levels button').forEach(b =>
+    b.addEventListener('click', () => { scoresLevel = b.dataset.level; renderScores(); }));
 
   document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -659,19 +838,34 @@
     }
   });
 
+  const valid = st => st && Array.isArray(st.puzzle) && st.puzzle.length === 81 && LEVELS[st.level];
+
+  function restore(st) {
+    if (!valid(st)) return false;
+    S = st;
+    // Ältere Spielstände kennen `won` noch nicht
+    if (S.done && S.won === undefined) S.won = S.values.every((v, k) => v === S.solution[k]);
+    overlay.hidden = true;
+    startTimer();
+    render();
+    return true;
+  }
+
   function start(hotData) {
     let restored = hotData && hotData.S;
+    if (!restored) restored = store.load('state');
     if (!restored) {
-      try { restored = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { restored = null; }
+      // Spielstand aus der ersten Version übernehmen
+      try { restored = JSON.parse(localStorage.getItem('sudoku-state-v1')); } catch (e) { restored = null; }
     }
-    if (restored && restored.puzzle && restored.puzzle.length === 81 && LEVELS[restored.level]) {
-      S = restored;
+    if (restore(restored)) {
       if (hotData && typeof hotData.selected === 'number') selected = hotData.selected;
-      startTimer();
       render();
     } else {
       newGame('easy');
     }
+    store.sync('scores', v => { if (v && typeof v === 'object') { scores = v; if (!scoresOverlay.hidden) renderScores(); } });
+    store.sync('state', v => restore(v));
   }
 
   window.claude?.hot?.snapshot?.(() => ({ S, selected }));
