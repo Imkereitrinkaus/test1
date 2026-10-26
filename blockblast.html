@@ -334,19 +334,11 @@
     const bannerEl = document.getElementById('banner');
     const scoresOverlay = document.getElementById('scoresOverlay');
     let grid, pieces, score, combo, movesSinceClear, over;
-    let scores = store.load('scores') || [];
+    // Eigene Liste seit der Umstellung auf fünffache Punkte; ältere Einträge zählen nicht mehr
+    const SCORES_KEY = 'scores-x5';
+    let scores = store.load(SCORES_KEY) || [];
     let cellEls = [];
 
-    // Rekord aus der ersten Version übernehmen
-    if (!scores.length) {
-      try {
-        const old = parseInt(localStorage.getItem('blockblast-best'), 10);
-        if (old > 0) {
-          scores = [{ score: old, date: null }];
-          store.save('scores', scores);
-        }
-      } catch (e) {}
-    }
     const best = () => Math.max(score || 0, scores.length ? scores[0].score : 0);
 
     // ---------- Ton ----------
@@ -687,7 +679,7 @@
       scores.push(entry);
       scores.sort((a, b) => b.score - a.score);
       scores = scores.slice(0, 10);
-      store.save('scores', scores);
+      store.save(SCORES_KEY, scores);
       return scores.indexOf(entry) + 1;
     }
 
@@ -776,7 +768,7 @@
     window.addEventListener('resize', () => { if (pieces) renderTray(); });
 
     if (!restore(store.load('state'))) start();
-    store.sync('scores', v => { if (Array.isArray(v)) { scores = v; render(); } });
+    store.sync(SCORES_KEY, v => { if (Array.isArray(v)) { scores = v; render(); } });
     store.sync('state', v => { if (!drag) restore(v); });
   })();
   </script>
