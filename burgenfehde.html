@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Burgenfehde</title>
+<style>
+  :root {
+    --bg: #1b2416;
+    --panel: #2a3522;
+    --panel2: #3a4a2c;
+    --ink: #f3efe0;
+    --muted: #b9b59d;
+    --gold: #f2c14e;
+    --red: #c0392b;
+    --green: #5e9e3f;
+    --line: #4a5a3a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    background: radial-gradient(circle at 50% 0%, #2c3a22, var(--bg) 70%);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app { width: 100%; max-width: 600px; padding: 10px 12px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .top h1 { font-size: 1.25rem; letter-spacing: .5px; color: var(--gold); text-shadow: 0 2px 0 #0006; }
+  .top a, .top button.small { color: var(--muted); font-size: 13px; text-decoration: none; background: none; border: 0; padding: 4px; cursor: pointer; }
+  .hud { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .pill { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .pill small { color: var(--muted); font-weight: 500; }
+  .pill.warn { border-color: var(--red); }
+  canvas { width: 100%; aspect-ratio: 1 / 1; border-radius: 12px; touch-action: none; display: block; border: 3px solid #3d2b1a; box-shadow: 0 6px 18px #0008; background: #5f9a46; }
+  .bar { display: flex; gap: 8px; }
+  .bar > button { flex: 1; }
+  button {
+    font: inherit; border: 0; border-radius: 10px; padding: 10px 12px; background: var(--panel2); color: var(--ink);
+    font-weight: 700; cursor: pointer; border-bottom: 3px solid rgba(0,0,0,.4); touch-action: manipulation;
+  }
+  button:active:not(:disabled) { transform: translateY(1px); border-bottom-width: 2px; }
+  button:disabled { opacity: .45; cursor: default; }
+  button.red { background: var(--red); }
+  button.green { background: var(--green); }
+  button.gold { background: #a87a12; }
+  .info { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-height: 70px; font-size: 14px; line-height: 1.45; }
+  .info h3 { font-size: 15px; margin-bottom: 2px; }
+  .info .muted, .muted { color: var(--muted); }
+  .info .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .info .acts button { padding: 8px 10px; font-size: 13px; }
+  .units { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  .ubtn { min-width: 74px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 6px; font-size: 12px; }
+  .ubtn .em { font-size: 22px; line-height: 1.1; }
+  .ubtn.sel { outline: 3px solid var(--gold); outline-offset: -3px; }
+  .hidden { display: none !important; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .modal.open { display: flex; }
+  .sheet { background: var(--panel); border: 2px solid var(--line); border-radius: 14px; max-width: 520px; width: 100%; max-height: 86vh; overflow: auto; padding: 14px; }
+  .sheet h2 { font-size: 1.15rem; margin-bottom: 6px; color: var(--gold); }
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .row:last-of-type { border-bottom: 0; }
+  .row .em { font-size: 28px; width: 40px; text-align: center; flex: none; }
+  .row .tx { flex: 1; min-width: 0; font-size: 13px; line-height: 1.35; }
+  .row .tx b { font-size: 14px; }
+  .row .ctl { display: flex; gap: 6px; align-items: center; flex: none; }
+  .row .ctl button { padding: 8px 10px; min-width: 40px; }
+  .cap { height: 10px; background: #0005; border-radius: 6px; overflow: hidden; margin: 6px 0 4px; }
+  .cap > div { height: 100%; background: var(--gold); }
+  .sheet .foot { display: flex; gap: 8px; margin-top: 12px; }
+  .sheet .foot button { flex: 1; }
+  .banners { font-size: 44px; text-align: center; margin: 8px 0; letter-spacing: 6px; }
+  .banners .off { filter: grayscale(1); opacity: .3; }
+  .result { text-align: center; font-size: 15px; line-height: 1.6; }
+  .toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: #000d; color: #fff; padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; font-size: 14px; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>🏰 Burgenfehde</h1>
+    <div>
+      <button class="small" data-act="help">Anleitung</button>
+      <button class="small" data-act="settings">Optionen</button>
+      <a href="index.html">← Spiele</a>
+    </div>
+  </div>
+
+  <div class="hud" id="hud"></div>
+  <canvas id="cv"></canvas>
+
+  <div id="villageUI">
+    <div class="bar" style="margin-bottom:8px">
+      <button data-act="shop">🔨 Bauen</button>
+      <button data-act="army">⚔️ Armee</button>
+      <button class="red" data-act="attack">🚩 Angreifen!</button>
+    </div>
+    <div class="info" id="info"></div>
+  </div>
+
+  <div id="raidUI" class="hidden">
+    <div class="units" id="units" style="margin-bottom:8px"></div>
+    <div class="bar" id="raidBar"></div>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ------------------------------------------------------------------
+//  Grundwerte
+// ------------------------------------------------------------------
+const G = 20;            // Spielfeld: 20 x 20 Felder
+const BUILDERS = 2;      // gleichzeitige Bauarbeiten
+const RAID_TIME = 150;   // Sekunden pro Überfall
+const SAVE_KEY = 'burgenfehde-save-v1';
+
+const T_DEF = {
+  keep:     { name: 'Bergfried',   icon: '🏰', size: 3, hp: 1600, cost: { w: 500, s: 500 }, time: 15, desc: 'Das Herz deiner Feste. Seine Stufe bestimmt, wie viele Gebäude du bauen und wie weit du sie ausbauen darfst.' },
+  lumber:   { name: 'Holzfäller',  icon: '🪓', size: 2, hp: 400,  cost: { w: 60,  s: 60 },  time: 4,  desc: 'Schlägt Holz. Tippe darauf, um es einzusammeln.' },
+  quarry:   { name: 'Steinbruch',  icon: '⛏️', size: 2, hp: 400,  cost: { w: 100, s: 20 },  time: 4,  desc: 'Bricht Stein. Tippe darauf, um ihn einzusammeln.' },
+  barn:     { name: 'Scheune',     icon: '🛖', size: 2, hp: 600,  cost: { w: 200, s: 150 }, time: 6,  desc: 'Vergrößert dein Lager für Holz und Stein.' },
+  camp:     { name: 'Heerlager',   icon: '⛺', size: 3, hp: 350,  cost: { w: 150, s: 50 },  time: 6,  desc: 'Bietet Platz für deine Truppen.' },
+  tower:    { name: 'Bogenturm',   icon: '🏹', size: 2, hp: 550,  cost: { w: 150, s: 200 }, time: 8,  desc: 'Schießt Pfeile auf einzelne Angreifer. Große Reichweite.' },
+  cauldron: { name: 'Feuerkessel', icon: '🔥', size: 2, hp: 650,  cost: { w: 300, s: 400 }, time: 10, desc: 'Schleudert brennendes Pech und trifft ganze Gruppen. Kurze Reichweite, langsam.' },
+  wall:     { name: 'Palisade',    icon: '🪵', size: 1, hp: 300,  cost: { w: 10,  s: 25 },  time: 0,  desc: 'Hält Angreifer auf. Wird sofort gebaut, kein Baumeister nötig.' },
+};
+const ORDER = ['lumber', 'quarry', 'barn', 'camp', 'tower', 'cauldron', 'wall'];
+const LIMITS = {
+  lumber:   [1, 2, 3, 3, 4],
+  quarry:   [1, 2, 3, 3, 4],
+  barn:     [1, 1, 2, 2, 3],
+  camp:     [1, 1, 2, 2, 3],
+  tower:    [1, 2, 2, 3, 4],
+  cauldron: [0, 1, 1, 2, 2],
+  wall:     [20, 35, 50, 70, 90],
+};
+const DEF_STATS = {
+  tower:    { range: 6,   rate: 1.0, dmg: 14 },
+  cauldron: { range: 3.5, rate: 2.4, dmg: 24, splash: 1.3 },
+};
+
+const UNITS = {
+  knecht:   { name: 'Knecht',      icon: '🗡️', hp: 70,  dmg: 12, rate: 1.0, range: 0.7, speed: 1.7, space: 1, cost: { w: 25,  s: 0 },  keep: 1, desc: 'Günstiger Nahkämpfer, greift das nächste Gebäude an.' },
+  schleuder:{ name: 'Schleuderer', icon: '🪨', hp: 35,  dmg: 10, rate: 1.0, range: 3.0, speed: 1.7, space: 1, cost: { w: 30,  s: 15 }, keep: 1, desc: 'Wirft Steine aus sicherer Entfernung. Zerbrechlich.' },
+  ramme:    { name: 'Rammbock',    icon: '🐏', hp: 420, dmg: 45, rate: 2.0, range: 0.7, speed: 0.9, space: 5, cost: { w: 150, s: 80 }, keep: 2, desc: 'Langsam und zäh. Zielt auf Verteidigung, dreifacher Schaden an Palisaden.' },
+  trommler: { name: 'Trommler',    icon: '🥁', hp: 90,  dmg: 0,  rate: 1.0, range: 1.0, speed: 1.5, space: 3, cost: { w: 80,  s: 60 }, keep: 3, desc: 'Kämpft nicht, treibt aber Truppen in der Nähe an: +30 % Tempo und Schaden.' },
+};
+const UNIT_ORDER = ['knecht', 'schleuder', 'ramme', 'trommler'];
+
+const costOf  = (t, lv) => { const d = T_DEF[t].cost, f = Math.pow(t === 'wall' ? 2.5 : 2, lv - 1); return { w: Math.round(d.w * f), s: Math.round(d.s * f) }; };
+const timeOf  = (t, lv) => T_DEF[t].time * lv * lv;
+const maxHp   = (t, lv) => Math.round(T_DEF[t].hp * (1 + (t === 'wall' ? 0.8 : 0.45) * (lv - 1)));
+const prodPerMin = lv => 60 * lv;
+const prodCap = lv => 300 * lv;
+const campCap = lv => 15 + 10 * (lv - 1);
+const defDmg  = (t, lv) => DEF_STATS[t].dmg * (1 + 0.3 * (lv - 1));
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const rndi = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const fmt = n => Math.floor(n).toLocaleString('de-DE');
+const fmtTime = s => { s = Math.max(0, Math.ceil(s)); const m = Math.floor(s / 60), r = s % 60; return m ? `${m}:${String(r).padStart(2, '0')} min` : `${r} s`; };
+const costTxt = c => [c.w ? `🪵 ${fmt(c.w)}` : '', c.s ? `🪨 ${fmt(c.s)}` : ''].filter(Boolean).join(' ') || 'kostenlos';
+
+// ------------------------------------------------------------------
+//  Spielstand
+// ------------------------------------------------------------------
+let S;
+function newGame() {
+  S = { wood: 700, stone: 700, ruhm: 0, raids: 0, army: { knecht: 10, schleuder: 5 }, nextId: 1, buildings: [], last: Date.now() };
+  const add = (type, x, y) => S.buildings.push({ id: S.nextId++, type, lv: 1, x, y, stock: 0 });
+  add('keep', 8, 8);
+  add('lumber', 3, 4);
+  add('quarry', 14, 4);
+  add('camp', 3, 13);
+  add('tower', 13, 13);
+  for (let x = 7; x <= 11; x++) { add('wall', x, 7); add('wall', x, 11); }
+  for (let y = 8; y <= 10; y++) { add('wall', 7, y); add('wall', 11, y); }
+}
+function save() { try { S.last = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) { S = JSON.parse(raw); if (S && Array.isArray(S.buildings)) return; }
+  } catch (e) {}
+  newGame();
+}
+
+const keepLv = () => (S.buildings.find(b => b.type === 'keep') || { lv: 1 }).lv;
+const countOf = t => S.buildings.filter(b => b.type === t).length;
+const limitOf = t => LIMITS[t][keepLv() - 1];
+const maxLvOf = t => t === 'keep' ? 5 : keepLv();
+const busyBuilders = () => S.buildings.filter(b => b.upEnd).length;
+const storageCap = () => 1500 + 500 * (keepLv() - 1) + S.buildings.filter(b => b.type === 'barn' && b.lv > 0).reduce((a, b) => a + 1500 * b.lv, 0);
+const armyCap = () => S.buildings.filter(b => b.type === 'camp' && b.lv > 0).reduce((a, b) => a + campCap(b.lv), 0);
+const armyUsed = (army = S.army) => UNIT_ORDER.reduce((a, u) => a + (army[u] || 0) * UNITS[u].space, 0);
+const canPay = c => S.wood >= c.w && S.stone >= c.s;
+const pay = c => { S.wood -= c.w; S.stone -= c.s; };
+
+// Zeit vergeht auch, wenn das Spiel geschlossen ist
+function advance(now) {
+  const dt = Math.max(0, (now - (S.last || now)) / 1000);
+  for (const b of S.buildings) {
+    if ((b.type === 'lumber' || b.type === 'quarry') && b.lv > 0) {
+      b.stock = Math.min(prodCap(b.lv), (b.stock || 0) + prodPerMin(b.lv) / 60 * dt);
+    }
+    if (b.upEnd && now >= b.upEnd) {
+      b.lv = b.upTo; delete b.upEnd; delete b.upTo;
+      toast(`${T_DEF[b.type].name} ist fertig (Stufe ${b.lv})`);
+    }
+  }
+  S.last = now;
+}
+
+// ------------------------------------------------------------------
+//  Canvas & Zeichnen
+// ------------------------------------------------------------------
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let T = 30;
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth;
+  cv.width = Math.round(w * dpr); cv.height = cv.width;
+  T = cv.width / G;
+}
+window.addEventListener('resize', resize);
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
+function circ(x, y, r, fill, stroke, lw) {
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || T * 0.06; ctx.stroke(); }
+}
+
+const WALL_COLORS = ['#8b5a2b', '#6e4520', '#8d8d8d', '#5f6670', '#b8963e'];
+
+function drawGround(raid) {
+  const a = raid ? '#a0a862' : '#6fae52', b = raid ? '#98a05b' : '#68a54c';
+  for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) {
+    ctx.fillStyle = (x + y) % 2 ? a : b; ctx.fillRect(x * T, y * T, T + 1, T + 1);
+  }
+}
+
+function drawWall(b, isWall, enemy) {
+  const cx = (b.x + 0.5) * T, cy = (b.y + 0.5) * T, col = WALL_COLORS[b.lv - 1] || WALL_COLORS[0];
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = col; ctx.lineWidth = T * 0.42;
+  for (const [dx, dy] of [[1, 0], [0, 1]]) {
+    if (isWall(b.x + dx, b.y + dy)) { ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + dx * T, cy + dy * T); ctx.stroke(); }
+  }
+  circ(cx, cy + T * 0.06, T * 0.3, 'rgba(0,0,0,.25)');
+  circ(cx, cy, T * 0.3, col, 'rgba(0,0,0,.45)', T * 0.05);
+  circ(cx - T * 0.08, cy - T * 0.08, T * 0.1, 'rgba(255,255,255,.25)');
+}
+
+function drawBuilding(b, opts) {
+  const d = T_DEF[b.type], s = d.size, x = b.x * T, y = b.y * T, w = s * T;
+  const now = opts.now, enemy = opts.enemy;
+  if (b.dead) {
+    ctx.fillStyle = 'rgba(60,45,30,.55)'; rr(x + T * .15, y + T * .15, w - T * .3, w - T * .3, T * .25); ctx.fill();
+    ctx.fillStyle = '#6b5a48';
+    for (let i = 0; i < s * 3; i++) { const px = x + ((i * 37) % 10) / 10 * w * .7 + w * .15, py = y + ((i * 53) % 10) / 10 * w * .7 + w * .15; circ(px, py, T * .1, '#7a6a55'); }
+    return;
+  }
+  if (b.type === 'wall') { drawWall(b, opts.isWall, enemy); return; }
+  const flag = enemy ? '#c0392b' : '#2f6fd6';
+  // Schatten & Grundplatte
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; rr(x + T * .18, y + T * .24, w - T * .26, w - T * .26, T * .25); ctx.fill();
+  const inset = T * .1;
+  const bx = x + inset, by = y + inset, bw = w - inset * 2;
+  const mx = x + w / 2, my = y + w / 2;
+  if (b.lv === 0) { // Baustelle
+    ctx.fillStyle = '#9c8461'; rr(bx, by, bw, bw, T * .2); ctx.fill();
+  } else switch (b.type) {
+    case 'keep': {
+      ctx.fillStyle = '#8e8e86'; rr(bx, by, bw, bw, T * .15); ctx.fill();
+      ctx.strokeStyle = '#5c5c56'; ctx.lineWidth = T * .08; ctx.stroke();
+      const n = 5, cw = bw / (n * 2 - 1);
+      ctx.fillStyle = '#6f6f68';
+      for (let i = 0; i < n; i++) {
+        ctx.fillRect(bx + i * 2 * cw, by - T * .08, cw, T * .2); ctx.fillRect(bx + i * 2 * cw, by + bw - T * .12, cw, T * .2);
+        ctx.fillRect(bx - T * .08, by + i * 2 * cw, T * .2, cw); ctx.fillRect(bx + bw - T * .12, by + i * 2 * cw, T * .2, cw);
+      }
+      ctx.fillStyle = '#a8a89e'; rr(mx - T * .8, my - T * .8, T * 1.6, T * 1.6, T * .2); ctx.fill();
+      circ(mx, my, T * .55, '#7a5c3a', '#4d3a24');
+      ctx.strokeStyle = '#3a2a1a'; ctx.lineWidth = T * .07; ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx, my - T * 1.1); ctx.stroke();
+      const wave = Math.sin(now / 300) * T * .08;
+      ctx.fillStyle = flag; ctx.beginPath(); ctx.moveTo(mx, my - T * 1.1); ctx.lineTo(mx + T * .65, my - T * .95 + wave); ctx.lineTo(mx, my - T * .75); ctx.fill();
+      break;
+    }
+    case 'lumber': {
+      ctx.fillStyle = '#8b6b43'; rr(bx, by, bw, bw, T * .25); ctx.fill();
+      for (let i = 0; i < 3; i++) {
+        const ly = by + bw * (.25 + i * .2), lx = bx + bw * (.12 + (i === 1 ? .08 : 0));
+        ctx.fillStyle = '#a0522d'; rr(lx, ly, bw * .6, T * .32, T * .14); ctx.fill();
+        circ(lx + bw * .6, ly + T * .16, T * .16, '#deb887', '#8b5a2b', T * .04);
+      }
+      circ(bx + bw * .8, by + bw * .78, T * .2, '#c49a6c', '#6b4a2a', T * .05);
+      break;
+    }
+    case 'quarry': {
+      ctx.fillStyle = '#7d7a6e'; rr(bx, by, bw, bw, T * .25); ctx.fill();
+      const rocks = [[.3, .32, .22], [.66, .3, .17], [.45, .66, .25], [.75, .7, .14]];
+      for (const [rx, ry, r] of rocks) { circ(bx + bw * rx, by + bw * ry, T * r * 1.6, '#b9b6ab', '#5f5c52', T * .05); circ(bx + bw * rx - T * .1, by + bw * ry - T * .1, T * r * .5, '#d6d3c8'); }
+      break;
+    }
+    case 'barn': {
+      ctx.fillStyle = '#7a4e2a'; rr(bx, by, bw, bw, T * .15); ctx.fill();
+      ctx.fillStyle = '#b5402f'; ctx.fillRect(bx + T * .1, by + T * .1, bw - T * .2, bw - T * .2);
+      ctx.fillStyle = '#8f2f22'; ctx.fillRect(bx + T * .1, my - T * .06, bw - T * .2, T * .12);
+      ctx.strokeStyle = 'rgba(0,0,0,.2)'; ctx.lineWidth = T * .04;
+      for (let i = 1; i < 5; i++) { const yy = by + T * .1 + (bw - T * .2) * i / 5; ctx.beginPath(); ctx.moveTo(bx + T * .1, yy); ctx.lineTo(bx + bw - T * .1, yy); ctx.stroke(); }
+      break;
+    }
+    case 'camp': {
+      ctx.fillStyle = '#9b8a5e'; rr(bx, by, bw, bw, T * .4); ctx.fill();
+      const tents = [[.27, .3], [.73, .3], [.27, .74], [.73, .74]];
+      for (const [tx, ty] of tents) {
+        const cx = bx + bw * tx, cy = by + bw * ty, r = T * .5;
+        ctx.fillStyle = '#e9dfc0'; ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy + r * .7); ctx.lineTo(cx - r, cy + r * .7); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#8a7a52'; ctx.lineWidth = T * .05; ctx.stroke();
+        ctx.fillStyle = flag; ctx.fillRect(cx - T * .05, cy - r - T * .2, T * .25, T * .14);
+      }
+      const fl = 1 + Math.sin(now / 120) * .15;
+      circ(mx, my, T * .22 * fl, '#ff9a1f'); circ(mx, my, T * .11 * fl, '#ffe066');
+      break;
+    }
+    case 'tower': {
+      circ(mx, my, bw * .48, '#9a988f', '#5d5b55', T * .07);
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; circ(mx + Math.cos(a) * bw * .42, my + Math.sin(a) * bw * .42, T * .13, '#7d7b74'); }
+      circ(mx, my, bw * .3, '#b9b7ad');
+      circ(mx, my, T * .2, flag, '#222', T * .04);
+      if (opts.aim != null) {
+        ctx.strokeStyle = '#4a3220'; ctx.lineWidth = T * .07; ctx.beginPath();
+        ctx.moveTo(mx, my); ctx.lineTo(mx + Math.cos(opts.aim) * T * .45, my + Math.sin(opts.aim) * T * .45); ctx.stroke();
+      }
+      break;
+    }
+    case 'cauldron': {
+      ctx.fillStyle = '#6d6a62'; rr(bx, by, bw, bw, T * .35); ctx.fill();
+      circ(mx, my, bw * .38, '#2b2b2b', '#111', T * .06);
+      const g = ctx.createRadialGradient(mx, my, 0, mx, my, bw * .32);
+      const p = .6 + Math.sin(now / 200) * .2;
+      g.addColorStop(0, `rgba(255,220,90,${p})`); g.addColorStop(1, 'rgba(255,90,0,0.1)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(mx, my, bw * .32, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+  }
+  // Bauarbeiten
+  if (b.upEnd) {
+    ctx.save(); rr(bx, by, bw, bw, T * .2); ctx.clip();
+    ctx.strokeStyle = 'rgba(80,55,25,.85)'; ctx.lineWidth = T * .08;
+    for (let i = -s; i < s * 2; i++) { ctx.beginPath(); ctx.moveTo(bx + i * T * .7, by); ctx.lineTo(bx + i * T * .7 + bw, by + bw); ctx.stroke(); }
+    ctx.restore();
+    const total = timeOf(b.type, b.upTo) * 1000, left = b.upEnd - now, p = clamp(1 - left / total, 0, 1);
+    ctx.fillStyle = '#000a'; rr(bx, by + bw - T * .32, bw, T * .3, T * .1); ctx.fill();
+    ctx.fillStyle = '#f2c14e'; rr(bx + T * .04, by + bw - T * .28, (bw - T * .08) * p, T * .22, T * .08); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = `bold ${T * .32}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(fmtTime(left / 1000).replace(' min', '').replace(' s', 's'), mx, by + T * .3);
+  }
+  // Stufe
+  if (b.lv > 0) {
+    const lx = x + w - T * .32, ly = y + w - T * .32;
+    circ(lx, ly, T * .24, 'rgba(20,20,20,.75)', '#f2c14e', T * .04);
+    ctx.fillStyle = '#fff'; ctx.font = `bold ${T * .28}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.lv, lx, ly + T * .01);
+  }
+  // Sammel-Blase
+  if (!enemy && (b.type === 'lumber' || b.type === 'quarry') && b.lv > 0 && b.stock >= Math.max(15, prodCap(b.lv) * .1)) {
+    const by2 = y - T * .1 + Math.sin(now / 250) * T * .08;
+    circ(mx, by2, T * .38, '#fff', '#333', T * .04);
+    ctx.font = `${T * .44}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.type === 'lumber' ? '🪵' : '🪨', mx, by2 + T * .03);
+  }
+  // Lebensbalken im Kampf
+  if (enemy && b.hp < b.max) drawHp(x + T * .2, y - T * .05, w - T * .4, b.hp / b.max);
+}
+
+function drawHp(x, y, w, p) {
+  ctx.fillStyle = '#000b'; ctx.fillRect(x, y, w, T * .14);
+  ctx.fillStyle = p > .5 ? '#6bd35a' : p > .25 ? '#f2c14e' : '#e0473a';
+  ctx.fillRect(x + 1, y + 1, (w - 2) * clamp(p, 0, 1), T * .14 - 2);
+}
+
+function drawUnit(u, now) {
+  const x = (u.x + u.ox) * T, y = (u.y + u.oy) * T;
+  if (u.type === 'trommler' && u.active) {
+    ctx.strokeStyle = `rgba(190,120,255,${.25 + Math.sin(now / 150) * .1})`; ctx.lineWidth = T * .06;
+    ctx.beginPath(); ctx.arc(x, y, 2.5 * T, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y + T * .2, T * .26, T * .1, 0, 0, Math.PI * 2); ctx.fill();
+  const bob = u.moving ? Math.sin(now / 90 + u.seed) * T * .04 : 0;
+  switch (u.type) {
+    case 'knecht':
+      circ(x, y + bob, T * .25, '#2f6fd6', '#13305e', T * .05);
+      circ(x, y - T * .05 + bob, T * .14, '#cfd6e6', '#555', T * .03);
+      ctx.strokeStyle = '#eee'; ctx.lineWidth = T * .06; ctx.beginPath();
+      ctx.moveTo(x + Math.cos(u.ang) * T * .15, y + Math.sin(u.ang) * T * .15 + bob);
+      ctx.lineTo(x + Math.cos(u.ang) * T * .45, y + Math.sin(u.ang) * T * .45 + bob); ctx.stroke();
+      break;
+    case 'schleuder':
+      circ(x, y + bob, T * .22, '#2e9e5b', '#145a30', T * .05);
+      circ(x, y - T * .04 + bob, T * .11, '#e2c49b');
+      circ(x + Math.cos(u.ang) * T * .3, y + Math.sin(u.ang) * T * .3 + bob, T * .07, '#888');
+      break;
+    case 'ramme':
+      ctx.save(); ctx.translate(x, y); ctx.rotate(u.ang);
+      ctx.fillStyle = '#222'; for (const [wx, wy] of [[-.25, -.3], [.2, -.3], [-.25, .3], [.2, .3]]) { ctx.beginPath(); ctx.arc(wx * T, wy * T, T * .1, 0, 7); ctx.fill(); }
+      ctx.fillStyle = '#8b5a2b'; rr(-T * .42, -T * .26, T * .8, T * .52, T * .08); ctx.fill();
+      ctx.strokeStyle = '#4d3218'; ctx.lineWidth = T * .05; ctx.stroke();
+      ctx.fillStyle = '#9a9a9a'; rr(T * .3, -T * .12, T * .25, T * .24, T * .06); ctx.fill();
+      ctx.restore();
+      break;
+    case 'trommler':
+      circ(x, y + bob, T * .24, '#7d3cb0', '#3e1660', T * .05);
+      circ(x + T * .12, y + T * .1 + bob, T * .13, '#e7cf9c', '#7a5a2a', T * .04);
+      break;
+  }
+  if (u.hp < u.max) drawHp(x - T * .3, y - T * .45, T * .6, u.hp / u.max);
+}
+
+function drawFx(now) {
+  for (const f of FX) {
+    const p = clamp(f.t / f.d, 0, 1);
+    if (f.k === 'arrow' || f.k === 'stone') {
+      const x = (f.x0 + (f.x1 - f.x0) * p) * T, y = (f.y0 + (f.y1 - f.y0) * p) * T;
+      if (f.k === 'arrow') {
+        const a = Math.atan2(f.y1 - f.y0, f.x1 - f.x0);
+        ctx.strokeStyle = '#3a2614'; ctx.lineWidth = T * .06; ctx.beginPath();
+        ctx.moveTo(x - Math.cos(a) * T * .3, y - Math.sin(a) * T * .3); ctx.lineTo(x, y); ctx.stroke();
+      } else circ(x, y, T * .08, '#777');
+    } else if (f.k === 'pitch') {
+      const x = (f.x0 + (f.x1 - f.x0) * p) * T, y = (f.y0 + (f.y1 - f.y0) * p) * T - Math.sin(p * Math.PI) * T * 1.5;
+      circ(x, y, T * .17, '#ff7a1a', '#3b1d00', T * .04);
+    } else if (f.k === 'fire') {
+      ctx.fillStyle = `rgba(255,${120 + 80 * (1 - p)},30,${.6 * (1 - p)})`;
+      ctx.beginPath(); ctx.arc(f.x * T, f.y * T, f.r * T * (.6 + p * .5), 0, Math.PI * 2); ctx.fill();
+    } else if (f.k === 'dust') {
+      ctx.fillStyle = `rgba(110,95,80,${.55 * (1 - p)})`;
+      ctx.beginPath(); ctx.arc(f.x * T, f.y * T, f.r * T * (.4 + p), 0, Math.PI * 2); ctx.fill();
+    } else if (f.k === 'hit') {
+      ctx.fillStyle = `rgba(255,255,255,${.8 * (1 - p)})`;
+      ctx.beginPath(); ctx.arc(f.x * T, f.y * T, T * (.1 + p * .25), 0, Math.PI * 2); ctx.fill();
+    } else if (f.k === 'text') {
+      ctx.globalAlpha = 1 - p; ctx.fillStyle = f.color || '#fff';
+      ctx.font = `bold ${T * .5}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.strokeStyle = '#000'; ctx.lineWidth = T * .08;
+      ctx.strokeText(f.txt, f.x * T, (f.y - p) * T); ctx.fillText(f.txt, f.x * T, (f.y - p) * T);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+let FX = [];
+function fx(o) { o.t = 0; FX.push(o); }
+
+// ------------------------------------------------------------------
+//  Dorf
+// ------------------------------------------------------------------
+let mode = 'village';
+let selId = null;
+let placing = null;   // Typ, der gerade gebaut wird
+let movingId = null;  // Gebäude, das verschoben wird
+let hover = null;
+
+function occVillage(ignoreId) {
+  const occ = new Int32Array(G * G).fill(0);
+  for (const b of S.buildings) {
+    if (b.id === ignoreId) continue;
+    const s = T_DEF[b.type].size;
+    for (let y = b.y; y < b.y + s; y++) for (let x = b.x; x < b.x + s; x++) occ[y * G + x] = b.id;
+  }
+  return occ;
+}
+function fits(occ, x, y, s) {
+  if (x < 0 || y < 0 || x + s > G || y + s > G) return false;
+  for (let yy = y; yy < y + s; yy++) for (let xx = x; xx < x + s; xx++) if (occ[yy * G + xx]) return false;
+  return true;
+}
+function anchor(tx, ty, s) { return [tx - Math.floor((s - 1) / 2), ty - Math.floor((s - 1) / 2)]; }
+
+function buildAt(type, tx, ty) {
+  const s = T_DEF[type].size, [x, y] = anchor(tx, ty, s);
+  if (!fits(occVillage(), x, y, s)) { toast('Hier ist kein Platz.'); return false; }
+  if (countOf(type) >= limitOf(type)) { toast('Mehr geht auf dieser Bergfried-Stufe nicht.'); placing = null; return false; }
+  const c = costOf(type, 1);
+  if (!canPay(c)) { toast('Nicht genug Rohstoffe.'); placing = null; return false; }
+  if (type !== 'wall' && busyBuilders() >= BUILDERS) { toast('Alle Baumeister sind beschäftigt.'); placing = null; return false; }
+  pay(c);
+  const b = { id: S.nextId++, type, lv: 1, x, y, stock: 0 };
+  if (type !== 'wall') { b.lv = 0; b.upTo = 1; b.upEnd = Date.now() + timeOf(type, 1) * 1000; }
+  S.buildings.push(b);
+  fx({ k: 'dust', x: x + s / 2, y: y + s / 2, r: s * .6, d: .5 });
+  save();
+  if (type !== 'wall' || countOf('wall') >= limitOf('wall') || !canPay(costOf('wall', 1))) placing = null;
+  if (type !== 'wall') selId = b.id;
+  return true;
+}
+
+function collect(b) {
+  const key = b.type === 'lumber' ? 'wood' : 'stone';
+  const room = storageCap() - S[key];
+  const amt = Math.floor(Math.min(room, b.stock || 0));
+  if (amt <= 0) { if (room <= 0) toast('Dein Lager ist voll – baue oder verbessere eine Scheune.'); return; }
+  S[key] += amt; b.stock -= amt;
+  const s = T_DEF[b.type].size;
+  fx({ k: 'text', x: b.x + s / 2, y: b.y, txt: `+${amt} ${key === 'wood' ? '🪵' : '🪨'}`, d: 1.1, color: '#ffe9a8' });
+  save();
+}
+
+function upgrade(b) {
+  if (b.upEnd) return;
+  const to = b.lv + 1;
+  if (to > maxLvOf(b.type)) { toast(b.type === 'keep' ? 'Höchste Stufe erreicht.' : 'Baue zuerst deinen Bergfried aus.'); return; }
+  const c = costOf(b.type, to);
+  if (!canPay(c)) { toast('Nicht genug Rohstoffe.'); return; }
+  if (b.type === 'wall') { pay(c); b.lv = to; fx({ k: 'hit', x: b.x + .5, y: b.y + .5, d: .4 }); save(); return; }
+  if (busyBuilders() >= BUILDERS) { toast('Alle Baumeister sind beschäftigt.'); return; }
+  pay(c); b.upTo = to; b.upEnd = Date.now() + timeOf(b.type, to) * 1000; save();
+}
+
+function upgradeAllWalls(lv) {
+  let n = 0;
+  for (const b of S.buildings) {
+    if (b.type !== 'wall' || b.lv !== lv || lv + 1 > maxLvOf('wall')) continue;
+    const c = costOf('wall', lv + 1);
+    if (!canPay(c)) break;
+    pay(c); b.lv++; n++;
+  }
+  toast(n ? `${n} Palisaden verbessert.` : 'Nicht genug Rohstoffe.');
+  save();
+}
+
+function villageTap(tx, ty) {
+  if (placing) { buildAt(placing, tx, ty); return; }
+  if (movingId) {
+    const b = S.buildings.find(b => b.id === movingId); if (!b) { movingId = null; return; }
+    const s = T_DEF[b.type].size, [x, y] = anchor(tx, ty, s);
+    if (!fits(occVillage(b.id), x, y, s)) { toast('Hier ist kein Platz.'); return; }
+    b.x = x; b.y = y; movingId = null; save(); return;
+  }
+  const occ = occVillage();
+  const id = occ[ty * G + tx];
+  if (!id) { selId = null; return; }
+  const b = S.buildings.find(b => b.id === id);
+  if ((b.type === 'lumber' || b.type === 'quarry') && b.stock >= 1 && b.lv > 0) collect(b);
+  selId = b.id;
+}
+
+// ------------------------------------------------------------------
+//  Gegnerische Festung erzeugen
+// ------------------------------------------------------------------
+const PLACES = ['Rabenstein', 'Moorbach', 'Eichenhall', 'Wolfsgrund', 'Krähenfels', 'Dornheim', 'Nebelfurt', 'Eisenbruch', 'Falkenau', 'Grauwacht', 'Distelburg', 'Kupferhang'];
+const LORDS = ['Ritter Kuno', 'Gräfin Adelheid', 'Vogt Ulrich', 'Baronin Hedwig', 'Hauptmann Ortwin', 'Junker Bertram', 'Fürstin Irmgard', 'Ritter Eckhart'];
+
+function genEnemy(L) {
+  const eL = clamp(L + pick([-1, 0, 0, 0, 1]), 1, 5);
+  const bs = [], occ = new Int16Array(G * G).fill(-1);
+  const free = (x, y, s, m) => {
+    if (x < 1 || y < 1 || x + s > G - 1 || y + s > G - 1) return false;
+    for (let yy = y - m; yy < y + s + m; yy++) for (let xx = x - m; xx < x + s + m; xx++) {
+      if (xx < 0 || yy < 0 || xx >= G || yy >= G) continue;
+      if (occ[yy * G + xx] >= 0) return false;
+    }
+    return true;
+  };
+  const put = (type, x, y, lv) => {
+    const s = T_DEF[type].size, i = bs.length, mx = maxHp(type, lv);
+    bs.push({ type, lv, x, y, size: s, max: mx, hp: mx, dead: false, cd: Math.random() });
+    for (let yy = y; yy < y + s; yy++) for (let xx = x; xx < x + s; xx++) occ[yy * G + xx] = i;
+  };
+  const lvR = () => Math.max(1, eL - (Math.random() < .35 ? 1 : 0));
+  let walls = LIMITS.wall[eL - 1];
+  const ring = (x0, y0, x1, y1, lv, all) => {
+    const tiles = [];
+    for (let x = x0; x <= x1; x++) { tiles.push([x, y0], [x, y1]); }
+    for (let y = y0 + 1; y < y1; y++) { tiles.push([x0, y], [x1, y]); }
+    const ok = tiles.filter(([x, y]) => x >= 1 && y >= 1 && x < G - 1 && y < G - 1 && occ[y * G + x] < 0);
+    if (all && ok.length > walls) return false;
+    for (const [x, y] of ok) { if (walls <= 0) break; put('wall', x, y, lv); walls--; }
+    return true;
+  };
+  const wallLv = lvR();
+  const kx = rndi(7, 10), ky = rndi(7, 10);
+  put('keep', kx, ky, eL);
+  ring(kx - 1, ky - 1, kx + 3, ky + 3, wallLv, true);
+
+  const defs = [];
+  for (let i = 0; i < LIMITS.tower[eL - 1]; i++) defs.push('tower');
+  for (let i = 0; i < LIMITS.cauldron[eL - 1]; i++) defs.push('cauldron');
+  const placedDefs = [];
+  for (const t of defs) {
+    const s = T_DEF[t].size;
+    for (let i = 0; i < 400; i++) {
+      const spread = 4 + Math.floor(i / 80);
+      const x = rndi(kx + 1 - spread - 1, kx + 1 + spread), y = rndi(ky + 1 - spread - 1, ky + 1 + spread);
+      if (free(x, y, s, 1)) { put(t, x, y, lvR()); placedDefs.push(bs[bs.length - 1]); break; }
+    }
+  }
+  // äußerer Wall um alles, sonst kleine Ringe um einzelne Türme
+  const core = bs.filter(b => b.type !== 'wall');
+  const x0 = Math.min(...core.map(b => b.x)) - 1, y0 = Math.min(...core.map(b => b.y)) - 1;
+  const x1 = Math.max(...core.map(b => b.x + b.size)), y1 = Math.max(...core.map(b => b.y + b.size));
+  if (!ring(x0, y0, x1, y1, wallLv, true)) {
+    for (const d of placedDefs.sort(() => Math.random() - .5)) {
+      if (walls < 8) break;
+      ring(d.x - 1, d.y - 1, d.x + d.size, d.y + d.size, wallLv, true);
+    }
+  }
+  // Wirtschaft draußen
+  const outer = [];
+  for (const t of ['lumber', 'quarry', 'barn', 'camp']) for (let i = 0; i < LIMITS[t][eL - 1]; i++) outer.push(t);
+  for (const t of outer) {
+    const s = T_DEF[t].size;
+    for (let i = 0; i < 300; i++) {
+      const x = rndi(2, G - 2 - s), y = rndi(2, G - 2 - s);
+      if (free(x, y, s, 1)) { put(t, x, y, lvR()); break; }
+    }
+  }
+  const lootBase = 250 + 320 * eL;
+  return {
+    b: bs, occ, eL,
+    name: `${pick(PLACES)}`, lord: pick(LORDS),
+    loot: { w: Math.round(lootBase * rnd(.7, 1.3)), s: Math.round(lootBase * rnd(.7, 1.3)) },
+  };
+}
+
+// ------------------------------------------------------------------
+//  Überfall
+// ------------------------------------------------------------------
+let R = null;
+
+function distRect(px, py, b) {
+  const dx = Math.max(b.x - px, 0, px - (b.x + b.size));
+  const dy = Math.max(b.y - py, 0, py - (b.y + b.size));
+  return Math.hypot(dx, dy);
+}
+
+function computeForbid() {
+  const f = new Uint8Array(G * G);
+  for (const b of R.enemy.b) {
+    if (b.dead) continue;
+    for (let y = b.y - 1; y <= b.y + b.size; y++) for (let x = b.x - 1; x <= b.x + b.size; x++)
+      if (x >= 0 && y >= 0 && x < G && y < G) f[y * G + x] = 1;
+  }
+  R.forbid = f;
+}
+
+function startRaid(reroll) {
+  if (!reroll && armyUsed() <= 0) { toast('Du hast keine Truppen. Bilde sie unter „Armee“ aus.'); return; }
+  if (reroll) {
+    const c = { w: 30 * keepLv(), s: 0 };
+    if (!canPay(c)) { toast('Nicht genug Holz für die Späher.'); return; }
+    pay(c);
+  }
+  const avail = {}; for (const u of UNIT_ORDER) avail[u] = S.army[u] || 0;
+  R = { enemy: genEnemy(keepLv()), units: [], time: RAID_TIME, started: false, ended: false, avail, sel: UNIT_ORDER.find(u => avail[u] > 0), destroyed: 0, flash: 0, holding: null };
+  R.total = R.enemy.b.filter(b => b.type !== 'wall').length;
+  computeForbid();
+  mode = 'raid'; selId = null; placing = null; movingId = null; FX = [];
+  closeModal(); renderAll();
+}
+
+function trySpawn(px, py) {
+  if (!R || R.ended) return;
+  const tx = Math.floor(px), ty = Math.floor(py);
+  if (tx < 0 || ty < 0 || tx >= G || ty >= G) return;
+  if (!R.sel || !R.avail[R.sel]) { toast('Wähle unten eine Truppe aus.'); return; }
+  if (R.forbid[ty * G + tx]) { R.flash = 1; return; }
+  const d = UNITS[R.sel];
+  R.avail[R.sel]--;
+  R.units.push({ type: R.sel, x: px, y: py, hp: d.hp, max: d.hp, dmg: d.dmg, rate: d.rate, range: d.range, speed: d.speed, cd: 0, tgt: null, path: null, ang: 0, ox: rnd(-.2, .2), oy: rnd(-.2, .2), seed: Math.random() * 10, buff: 1 });
+  fx({ k: 'dust', x: px, y: py, r: .4, d: .35 });
+  if (!R.started) { R.started = true; }
+  if (!R.avail[R.sel]) { const n = UNIT_ORDER.find(u => R.avail[u] > 0); if (n) R.sel = n; }
+  renderRaidUI();
+}
+
+// Wegsuche (Dijkstra) – Palisaden sind teuer, aber durchbrechbar
+const DIRS = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
+function findPath(u, tgt) {
+  const E = R.enemy, N = G * G;
+  const dist = new Float32Array(N).fill(1e9), prev = new Int32Array(N).fill(-1);
+  const sx = clamp(Math.floor(u.x), 0, G - 1), sy = clamp(Math.floor(u.y), 0, G - 1), s = sy * G + sx;
+  const wallCost = u.type === 'ramme' ? 5 : 10, reach = u.range + 0.35;
+  const heap = [[0, s]]; dist[s] = 0;
+  const push = (n) => { heap.push(n); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = i * 2 + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  const blocked = i => { const o = E.occ[i]; return o >= 0; };
+  while (heap.length) {
+    const [d, i] = pop();
+    if (d > dist[i]) continue;
+    const x = i % G, y = (i / G) | 0;
+    if (distRect(x + .5, y + .5, tgt) <= reach) {
+      const path = []; let c = i;
+      while (c !== s && c >= 0) { path.push(c); c = prev[c]; }
+      return path.reverse();
+    }
+    for (const [dx, dy, c0] of DIRS) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= G || ny >= G) continue;
+      const ni = ny * G + nx;
+      let c = c0;
+      const o = E.occ[ni];
+      if (o >= 0) { if (E.b[o].type !== 'wall') continue; c += wallCost; }
+      if (dx && dy && (blocked(y * G + nx) || blocked(ny * G + x))) continue;
+      const nd = d + c;
+      if (nd < dist[ni]) { dist[ni] = nd; prev[ni] = i; push([nd, ni]); }
+    }
+  }
+  return null;
+}
+
+function pickTarget(u) {
+  const alive = R.enemy.b.filter(b => !b.dead && b.type !== 'wall');
+  let pool = alive;
+  if (u.type === 'ramme') { const d = alive.filter(b => b.type === 'tower' || b.type === 'cauldron'); if (d.length) pool = d; }
+  let best = null, bd = 1e9;
+  for (const b of pool) { const d = distRect(u.x, u.y, b); if (d < bd) { bd = d; best = b; } }
+  return best;
+}
+
+function damageBuilding(b, dmg) {
+  if (b.dead) return;
+  b.hp -= dmg;
+  if (b.hp <= 0) {
+    b.hp = 0; b.dead = true;
+    for (let y = b.y; y < b.y + b.size; y++) for (let x = b.x; x < b.x + b.size; x++) R.enemy.occ[y * G + x] = -1;
+    fx({ k: 'dust', x: b.x + b.size / 2, y: b.y + b.size / 2, r: b.size * .8, d: .8 });
+    if (b.type !== 'wall') R.destroyed++;
+    for (const u of R.units) u.path = null;
+    computeForbid();
+    renderHud();
+  }
+}
+
+function attack(u, b) {
+  const dx = b.x + b.size / 2 - u.x, dy = b.y + b.size / 2 - u.y;
+  u.ang = Math.atan2(dy, dx);
+  if (u.cd > 0) return;
+  u.cd = u.rate;
+  const dmg = u.dmg * u.buff * (u.type === 'ramme' && b.type === 'wall' ? 3 : 1);
+  if (u.type === 'schleuder') {
+    const tx = clamp(u.x, b.x + .2, b.x + b.size - .2), ty = clamp(u.y, b.y + .2, b.y + b.size - .2);
+    fx({ k: 'stone', x0: u.x, y0: u.y, x1: tx, y1: ty, d: .25 });
+  } else {
+    fx({ k: 'hit', x: clamp(u.x, b.x, b.x + b.size), y: clamp(u.y, b.y, b.y + b.size), d: .25 });
+  }
+  damageBuilding(b, dmg);
+}
+
+function moveTo(u, tx, ty, dt) {
+  const dx = tx - u.x, dy = ty - u.y, d = Math.hypot(dx, dy), step = u.speed * u.buff * dt;
+  u.moving = true;
+  if (d > 0.001) u.ang = Math.atan2(dy, dx);
+  if (d <= step) { u.x = tx; u.y = ty; return true; }
+  u.x += dx / d * step; u.y += dy / d * step; return false;
+}
+
+function updateUnit(u, dt) {
+  u.moving = false;
+  u.cd -= dt;
+  if (u.type === 'trommler') {
+    let near = null, nd = 1e9;
+    for (const o of R.units) if (o !== u && o.type !== 'trommler') { const d = Math.hypot(o.x - u.x, o.y - u.y); if (d < nd) { nd = d; near = o; } }
+    u.active = !!near;
+    if (!near || nd < 1.3) return;
+    u.repath = (u.repath || 0) - dt;
+    if (!u.path || u.repath <= 0) { u.path = findPath(u, { x: Math.floor(near.x), y: Math.floor(near.y), size: 1 }) || []; u.repath = .8; }
+    followPath(u, dt);
+    return;
+  }
+  if (!u.tgt || u.tgt.dead) { u.tgt = pickTarget(u); u.path = null; if (!u.tgt) return; }
+  if (distRect(u.x, u.y, u.tgt) <= u.range) { attack(u, u.tgt); return; }
+  if (!u.path) u.path = findPath(u, u.tgt) || [];
+  if (!u.path.length) { // Notfall: direkt hinlaufen
+    moveTo(u, u.tgt.x + u.tgt.size / 2, u.tgt.y + u.tgt.size / 2, dt); return;
+  }
+  followPath(u, dt);
+}
+
+function followPath(u, dt) {
+  if (!u.path || !u.path.length) return;
+  const ni = u.path[0], o = R.enemy.occ[ni];
+  if (o >= 0) {
+    const w = R.enemy.b[o];
+    if (w.type === 'wall' && !w.dead) {
+      if (distRect(u.x, u.y, w) <= Math.max(u.range, 0.7) + 0.15) { attack(u, w); return; }
+    } else if (!w.dead) { u.path = null; return; }
+  }
+  const nx = ni % G + .5, ny = ((ni / G) | 0) + .5;
+  if (moveTo(u, nx, ny, dt)) u.path.shift();
+}
+
+function updateDefenses(dt) {
+  for (const b of R.enemy.b) {
+    if (b.dead || !DEF_STATS[b.type]) continue;
+    const st = DEF_STATS[b.type], cx = b.x + b.size / 2, cy = b.y + b.size / 2;
+    b.cd -= dt;
+    let best = null, bd = 1e9;
+    for (const u of R.units) { const d = Math.hypot(u.x - cx, u.y - cy); if (d <= st.range && d < bd) { bd = d; best = u; } }
+    if (best) b.aim = Math.atan2(best.y - cy, best.x - cx);
+    if (b.cd > 0 || !best) continue;
+    b.cd = st.rate;
+    const dmg = defDmg(b.type, b.lv);
+    if (b.type === 'tower') {
+      fx({ k: 'arrow', x0: cx, y0: cy, x1: best.x, y1: best.y, d: .2 });
+      best.hp -= dmg;
+    } else {
+      fx({ k: 'pitch', x0: cx, y0: cy, x1: best.x, y1: best.y, d: .7, dmg, r: st.splash, impact: true });
+    }
+  }
+}
+
+function updateFx(dt) {
+  for (const f of FX) {
+    f.t += dt;
+    if (f.k === 'pitch' && f.impact && f.t >= f.d && R) {
+      f.impact = false;
+      for (const u of R.units) if (Math.hypot(u.x - f.x1, u.y - f.y1) <= f.r) u.hp -= f.dmg;
+      FX.push({ k: 'fire', x: f.x1, y: f.y1, r: f.r, t: 0, d: .5 });
+    }
+  }
+  FX = FX.filter(f => f.t < f.d);
+}
+
+function updateRaid(dt) {
+  if (!R || R.ended) return;
+  R.flash = Math.max(0, R.flash - dt * 1.5);
+  if (R.holding && R.started !== null) {
+    R.holding.t -= dt;
+    if (R.holding.t <= 0) { trySpawn(R.holding.x, R.holding.y); R.holding.t = .14; }
+  }
+  if (!R.started) return;
+  R.time -= dt;
+  // Trommler-Buff
+  const drums = R.units.filter(u => u.type === 'trommler');
+  for (const u of R.units) u.buff = drums.some(d => d !== u && Math.hypot(d.x - u.x, d.y - u.y) <= 2.5) ? 1.3 : 1;
+  for (const u of R.units) updateUnit(u, dt);
+  updateDefenses(dt);
+  const before = R.units.length;
+  R.units = R.units.filter(u => { if (u.hp <= 0) { fx({ k: 'dust', x: u.x, y: u.y, r: .35, d: .4 }); return false; } return true; });
+  if (R.units.length !== before) renderRaidUI();
+  const fighters = R.units.some(u => u.type !== 'trommler');
+  const reserve = UNIT_ORDER.some(u => u !== 'trommler' && R.avail[u] > 0);
+  if (R.time <= 0 || R.destroyed >= R.total || (!fighters && !reserve)) endRaid();
+}
+
+function raidScore() {
+  const pct = R.total ? R.destroyed / R.total : 0;
+  const keepDead = R.enemy.b.some(b => b.type === 'keep' && b.dead);
+  const banners = (pct >= .5 ? 1 : 0) + (keepDead ? 1 : 0) + (pct >= 1 ? 1 : 0);
+  return { pct, banners, loot: { w: Math.floor(R.enemy.loot.w * pct), s: Math.floor(R.enemy.loot.s * pct) } };
+}
+
+function endRaid() {
+  if (!R || R.ended) return;
+  R.ended = true;
+  const sc = raidScore();
+  const cap = storageCap();
+  const gotW = Math.max(0, Math.min(sc.loot.w, cap - S.wood)), gotS = Math.max(0, Math.min(sc.loot.s, cap - S.stone));
+  S.wood += gotW; S.stone += gotS;
+  const dr = !R.started ? 0 : sc.banners > 0 ? 8 + 6 * sc.banners : -6;
+  S.ruhm = Math.max(0, S.ruhm + dr);
+  if (R.started) S.raids = (S.raids || 0) + 1;
+  // Nicht eingesetzte Truppen kehren zurück, eingesetzte sind verbraucht
+  S.army = { ...R.avail };
+  save();
+  if (!R.started) { goHome(); return; }
+  const fl = [0, 1, 2].map(i => `<span class="${i < sc.banners ? '' : 'off'}">🚩</span>`).join('');
+  openModal(`
+    <h2 style="text-align:center">${sc.banners ? 'Sieg!' : 'Niederlage'}</h2>
+    <div class="banners">${fl}</div>
+    <div class="result">
+      <div>Zerstört: <b>${Math.round(sc.pct * 100)} %</b></div>
+      <div>Beute: <b>🪵 ${fmt(gotW)}  🪨 ${fmt(gotS)}</b>${gotW < sc.loot.w || gotS < sc.loot.s ? ' <span class="muted">(Lager voll)</span>' : ''}</div>
+      <div>Ruhm: <b>${dr >= 0 ? '+' : ''}${dr}</b></div>
+    </div>
+    <div class="foot"><button class="green" data-act="home">Heimkehren</button></div>`);
+}
+
+function goHome() { R = null; mode = 'village'; FX = []; closeModal(); renderAll(); }
+
+// ------------------------------------------------------------------
+//  Haupt-Zeichenroutine
+// ------------------------------------------------------------------
+function draw(now) {
+  if (cv.width !== Math.round(cv.clientWidth * Math.min(window.devicePixelRatio || 1, 2))) resize();
+  const raid = mode === 'raid' && R;
+  drawGround(raid);
+  if (raid) {
+    const a = .07 + R.flash * .25 + (R.holding ? .06 : 0);
+    ctx.fillStyle = `rgba(200,30,30,${a})`;
+    for (let i = 0; i < G * G; i++) if (R.forbid[i]) ctx.fillRect((i % G) * T, ((i / G) | 0) * T, T + 1, T + 1);
+    const list = R.enemy.b;
+    const wallAt = (x, y) => { if (x < 0 || y < 0 || x >= G || y >= G) return false; const o = R.enemy.occ[y * G + x]; return o >= 0 && list[o].type === 'wall'; };
+    for (const b of list) if (b.dead) drawBuilding(b, { now, enemy: true });
+    for (const b of list) if (!b.dead && b.type === 'wall') drawBuilding(b, { now, enemy: true, isWall: wallAt });
+    for (const b of list) if (!b.dead && b.type !== 'wall') drawBuilding(b, { now, enemy: true, aim: b.aim });
+    const us = [...R.units].sort((a, b) => a.y - b.y);
+    for (const u of us) drawUnit(u, now);
+  } else {
+    const occ = occVillage();
+    const wallAt = (x, y) => { if (x < 0 || y < 0 || x >= G || y >= G) return false; const id = occ[y * G + x]; const b = id && S.buildings.find(b => b.id === id); return !!b && b.type === 'wall'; };
+    for (const b of S.buildings) if (b.type === 'wall' && b.id !== movingId) drawBuilding(b, { now, isWall: wallAt });
+    for (const b of S.buildings) if (b.type !== 'wall' && b.id !== movingId) drawBuilding(b, { now, aim: null });
+    const sel = S.buildings.find(b => b.id === selId);
+    if (sel && !movingId) {
+      const s = T_DEF[sel.type].size;
+      ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = T * .08; ctx.setLineDash([T * .25, T * .15]);
+      rr(sel.x * T + 2, sel.y * T + 2, s * T - 4, s * T - 4, T * .2); ctx.stroke(); ctx.setLineDash([]);
+      if (DEF_STATS[sel.type] && sel.lv > 0) {
+        ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = T * .04;
+        ctx.beginPath(); ctx.arc((sel.x + s / 2) * T, (sel.y + s / 2) * T, DEF_STATS[sel.type].range * T, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+    }
+    const ghostType = placing || (movingId && (S.buildings.find(b => b.id === movingId) || {}).type);
+    if (ghostType && hover) {
+      const s = T_DEF[ghostType].size, [x, y] = anchor(hover[0], hover[1], s);
+      const ok = fits(occVillage(movingId), x, y, s);
+      ctx.fillStyle = ok ? 'rgba(120,255,120,.35)' : 'rgba(255,80,80,.4)';
+      rr(x * T, y * T, s * T, s * T, T * .2); ctx.fill();
+      ctx.font = `${T * Math.min(s, 2) * .6}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(T_DEF[ghostType].icon, (x + s / 2) * T, (y + s / 2) * T);
+    }
+  }
+  drawFx(now);
+}
+
+// ------------------------------------------------------------------
+//  Eingabe
+// ------------------------------------------------------------------
+function evTile(e) {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width * G, (e.clientY - r.top) / r.height * G];
+}
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const [px, py] = evTile(e);
+  const tx = Math.floor(px), ty = Math.floor(py);
+  if (mode === 'raid') {
+    if (!R || R.ended) return;
+    trySpawn(px, py);
+    R.holding = { x: px, y: py, t: .35 };
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    return;
+  }
+  hover = [tx, ty];
+  villageTap(clamp(tx, 0, G - 1), clamp(ty, 0, G - 1));
+  renderAll();
+});
+cv.addEventListener('pointermove', e => {
+  const [px, py] = evTile(e);
+  if (mode === 'raid') { if (R && R.holding) { R.holding.x = px; R.holding.y = py; } return; }
+  hover = [clamp(Math.floor(px), 0, G - 1), clamp(Math.floor(py), 0, G - 1)];
+});
+const stopHold = () => { if (R) R.holding = null; };
+cv.addEventListener('pointerup', stopHold);
+cv.addEventListener('pointercancel', stopHold);
+cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = null; });
+
+// ------------------------------------------------------------------
+//  Oberfläche
+// ------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000); }
+function openModal(html) { $('sheet').innerHTML = html; $('modal').classList.add('open'); }
+function closeModal() { $('modal').classList.remove('open'); modalKind = null; }
+let modalKind = null;
+
+function setHtml(el, html) { if (el._h !== html) { el._h = html; el.innerHTML = html; } }
+
+function renderHud() {
+  if (mode === 'raid' && R) {
+    const sc = raidScore();
+    const fl = [0, 1, 2].map(i => i < sc.banners ? '🚩' : '▫️').join('');
+    setHtml($('hud'), `
+      <span class="pill">⏳ ${R.started ? fmtTime(R.time) : 'Bereit'}</span>
+      <span class="pill">💥 ${Math.round(sc.pct * 100)} %</span>
+      <span class="pill">${fl}</span>
+      <span class="pill">Beute 🪵 ${fmt(sc.loot.w)} 🪨 ${fmt(sc.loot.s)}</span>
+      <span class="pill"><small>${R.enemy.lord}, ${R.enemy.name} · Stufe ${R.enemy.eL}</small></span>`);
+    return;
+  }
+  const cap = storageCap();
+  setHtml($('hud'), `
+    <span class="pill ${S.wood >= cap ? 'warn' : ''}">🪵 ${fmt(S.wood)} <small>/ ${fmt(cap)}</small></span>
+    <span class="pill ${S.stone >= cap ? 'warn' : ''}">🪨 ${fmt(S.stone)} <small>/ ${fmt(cap)}</small></span>
+    <span class="pill">🏆 ${fmt(S.ruhm)} <small>Ruhm</small></span>
+    <span class="pill">👷 ${BUILDERS - busyBuilders()}/${BUILDERS}</span>
+    <span class="pill">⚔️ ${armyUsed()}/${armyCap()}</span>`);
+}
+
+function renderInfo() {
+  let h;
+  if (placing) {
+    const d = T_DEF[placing];
+    h = `<h3>${d.icon} ${d.name} bauen</h3><div class="muted">Tippe auf ein freies Feld. Kosten: ${costTxt(costOf(placing, 1))}${placing === 'wall' ? ` · ${countOf('wall')}/${limitOf('wall')} gebaut` : ''}</div>
+      <div class="acts"><button data-act="cancel">${placing === 'wall' ? 'Fertig' : 'Abbrechen'}</button></div>`;
+  } else if (movingId) {
+    const b = S.buildings.find(b => b.id === movingId);
+    h = `<h3>${T_DEF[b.type].icon} ${T_DEF[b.type].name} verschieben</h3><div class="muted">Tippe auf den neuen Platz.</div>
+      <div class="acts"><button data-act="cancel">Abbrechen</button></div>`;
+  } else {
+    const b = S.buildings.find(b => b.id === selId);
+    if (!b) {
+      h = `<h3>Deine Feste</h3><div class="muted">Tippe auf ein Gebäude, um es zu verbessern oder zu verschieben. Volle Holzfäller und Steinbrüche zeigen eine Blase – antippen zum Einsammeln. Mit 🚩 überfällst du fremde Burgen und erbeutest Rohstoffe.</div>`;
+    } else {
+      const d = T_DEF[b.type], lines = [];
+      if (b.lv > 0) lines.push(`Lebenspunkte: ${fmt(maxHp(b.type, b.lv))}`);
+      if ((b.type === 'lumber' || b.type === 'quarry') && b.lv > 0) lines.push(`${fmt(prodPerMin(b.lv))} pro Minute · gesammelt ${fmt(b.stock)}/${fmt(prodCap(b.lv))}`);
+      if (b.type === 'barn' && b.lv > 0) lines.push(`+${fmt(1500 * b.lv)} Lagerplatz`);
+      if (b.type === 'camp' && b.lv > 0) lines.push(`Platz für ${campCap(b.lv)} Truppen`);
+      if (DEF_STATS[b.type] && b.lv > 0) lines.push(`Schaden ${Math.round(defDmg(b.type, b.lv))} · Reichweite ${DEF_STATS[b.type].range}`);
+      const acts = [];
+      if (b.upEnd) {
+        lines.push(`<b>${b.lv === 0 ? 'Wird gebaut' : `Ausbau auf Stufe ${b.upTo}`}: noch ${fmtTime((b.upEnd - Date.now()) / 1000)}</b>`);
+      } else if (b.lv < maxLvOf(b.type)) {
+        const c = costOf(b.type, b.lv + 1);
+        const t = timeOf(b.type, b.lv + 1);
+        const dis = !canPay(c) || (b.type !== 'wall' && busyBuilders() >= BUILDERS);
+        acts.push(`<button class="gold" data-act="upgrade" ${dis ? 'disabled' : ''}>⬆️ Stufe ${b.lv + 1}: ${costTxt(c)}${t ? ` · ${fmtTime(t)}` : ''}</button>`);
+        if (b.type === 'wall') {
+          const n = S.buildings.filter(o => o.type === 'wall' && o.lv === b.lv).length;
+          if (n > 1) acts.push(`<button class="gold" data-act="upwalls" ${!canPay(c) ? 'disabled' : ''}>Alle ${n} auf Stufe ${b.lv + 1}</button>`);
+        }
+      } else {
+        lines.push(b.type === 'keep' ? 'Höchste Stufe erreicht.' : 'Für mehr Stufen den Bergfried ausbauen.');
+      }
+      if ((b.type === 'lumber' || b.type === 'quarry') && b.lv > 0) acts.push(`<button data-act="collect" ${b.stock < 1 ? 'disabled' : ''}>Einsammeln</button>`);
+      acts.push(`<button data-act="move">Verschieben</button>`);
+      h = `<h3>${d.icon} ${d.name} ${b.lv > 0 ? `· Stufe ${b.lv}` : ''}</h3><div class="muted">${d.desc}</div><div>${lines.join('<br>')}</div><div class="acts">${acts.join('')}</div>`;
+    }
+  }
+  setHtml($('info'), h);
+}
+
+function renderShop() {
+  const rows = ORDER.map(t => {
+    const d = T_DEF[t], c = costOf(t, 1), n = countOf(t), lim = limitOf(t);
+    let why = '';
+    if (n >= lim) why = lim === 0 ? 'Ab Bergfried-Stufe 2' : 'Grenze erreicht';
+    else if (!canPay(c)) why = 'Zu teuer';
+    else if (t !== 'wall' && busyBuilders() >= BUILDERS) why = 'Baumeister beschäftigt';
+    return `<div class="row"><div class="em">${d.icon}</div>
+      <div class="tx"><b>${d.name}</b> <span class="muted">${n}/${lim} · ${d.size}×${d.size}</span><br>${d.desc}<br>${costTxt(c)}${d.time ? ` · ${fmtTime(timeOf(t, 1))}` : ''}</div>
+      <div class="ctl"><button class="green" data-act="build:${t}" ${why ? 'disabled' : ''} title="${why}">${why || 'Bauen'}</button></div></div>`;
+  }).join('');
+  openModal(`<h2>🔨 Bauen</h2>${rows}<div class="foot"><button data-act="close">Schließen</button></div>`);
+  modalKind = 'shop';
+}
+
+function renderArmy() {
+  const cap = armyCap(), used = armyUsed();
+  const rows = UNIT_ORDER.map(k => {
+    const u = UNITS[k], locked = keepLv() < u.keep, n = S.army[k] || 0;
+    const canAdd = !locked && canPay(u.cost) && used + u.space <= cap;
+    return `<div class="row"><div class="em">${u.icon}</div>
+      <div class="tx"><b>${u.name}</b> <span class="muted">Platz ${u.space}</span><br>${u.desc}<br>${locked ? `<span class="muted">Ab Bergfried-Stufe ${u.keep}</span>` : costTxt(u.cost)}</div>
+      <div class="ctl"><button data-act="untrain:${k}" ${n ? '' : 'disabled'}>−</button><b style="min-width:22px;text-align:center">${n}</b><button class="green" data-act="train:${k}" ${canAdd ? '' : 'disabled'}>+</button></div></div>`;
+  }).join('');
+  openModal(`<h2>⚔️ Armee</h2>
+    <div>Truppenplatz: <b>${used}/${cap}</b></div><div class="cap"><div style="width:${cap ? used / cap * 100 : 0}%"></div></div>
+    <div class="muted" style="font-size:13px">Mehr Platz gibt es durch zusätzliche oder ausgebaute Heerlager. Entlassene Truppen erstatten ihre Kosten.</div>
+    ${rows}<div class="foot"><button data-act="close">Schließen</button><button class="red" data-act="attack">🚩 Angreifen!</button></div>`);
+  modalKind = 'army';
+}
+
+function renderRaidUI() {
+  if (!R) return;
+  setHtml($('units'), UNIT_ORDER.filter(k => (S.army[k] || 0) > 0).map(k => {
+    const u = UNITS[k];
+    return `<button class="ubtn ${R.sel === k ? 'sel' : ''}" data-act="sel:${k}" ${R.avail[k] ? '' : 'disabled'}><span class="em">${u.icon}</span><span>${u.name}</span><b>×${R.avail[k]}</b></button>`;
+  }).join(''));
+  setHtml($('raidBar'), R.started
+    ? `<button class="red" data-act="endraid">🏳️ Angriff beenden</button>`
+    : `<button data-act="home">🏠 Heimkehren</button><button class="gold" data-act="next">🔎 Nächstes Ziel (🪵 ${30 * keepLv()})</button>`);
+}
+
+function renderAll() {
+  $('villageUI').classList.toggle('hidden', mode !== 'village');
+  $('raidUI').classList.toggle('hidden', mode !== 'raid');
+  renderHud();
+  if (mode === 'village') renderInfo(); else renderRaidUI();
+}
+
+function help() {
+  openModal(`<h2>📜 Anleitung</h2>
+  <div style="font-size:14px;line-height:1.55">
+  <p><b>Aufbauen:</b> Holzfäller und Steinbrüche produzieren auch, während das Spiel geschlossen ist. Tippe auf die Blase, um einzusammeln. Scheunen vergrößern dein Lager.</p><br>
+  <p><b>Bergfried:</b> Seine Stufe bestimmt, wie viele Gebäude du haben darfst, wie hoch du sie ausbauen kannst und welche Truppen verfügbar sind. Du hast ${BUILDERS} Baumeister.</p><br>
+  <p><b>Überfallen:</b> Wähle eine Truppe und tippe auf den Rand des Feldes – nicht in die rot markierte Zone nahe den Gebäuden. Gedrückt halten setzt mehrere Truppen. Truppen suchen sich ihre Ziele selbst.</p><br>
+  <p><b>Banner:</b> 🚩 für 50 % Zerstörung, 🚩 für den gefallenen Bergfried, 🚩 für 100 %. Die Beute wächst mit der Zerstörung, Siege bringen Ruhm.</p><br>
+  <p><b>Tipp:</b> Rammböcke durchbrechen Palisaden und gehen auf Türme los, Schleuderer kümmern sich aus der Distanz um den Rest. Ein Trommler mittendrin macht alle schneller.</p>
+  </div><div class="foot"><button data-act="close">Los geht's</button></div>`);
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const [act, arg] = el.dataset.act.split(':');
+  const b = S.buildings.find(b => b.id === selId);
+  switch (act) {
+    case 'shop': placing = null; movingId = null; renderShop(); break;
+    case 'army': renderArmy(); break;
+    case 'attack': startRaid(false); break;
+    case 'close': closeModal(); break;
+    case 'build': placing = arg; selId = null; movingId = null; closeModal(); toast('Tippe auf ein freies Feld.'); break;
+    case 'cancel': placing = null; movingId = null; break;
+    case 'upgrade': if (b) upgrade(b); break;
+    case 'upwalls': if (b) upgradeAllWalls(b.lv); break;
+    case 'collect': if (b) collect(b); break;
+    case 'move': if (b) { movingId = b.id; placing = null; } break;
+    case 'train': {
+      const u = UNITS[arg];
+      if (canPay(u.cost) && armyUsed() + u.space <= armyCap() && keepLv() >= u.keep) { pay(u.cost); S.army[arg] = (S.army[arg] || 0) + 1; save(); }
+      renderArmy(); break;
+    }
+    case 'untrain': {
+      const u = UNITS[arg], cap = storageCap();
+      if ((S.army[arg] || 0) > 0) { S.army[arg]--; S.wood = Math.min(cap, S.wood + u.cost.w); S.stone = Math.min(cap, S.stone + u.cost.s); save(); }
+      renderArmy(); break;
+    }
+    case 'sel': if (R) { R.sel = arg; renderRaidUI(); } break;
+    case 'next': startRaid(true); break;
+    case 'home': if (R && !R.ended) { endRaid(); } else goHome(); break;
+    case 'endraid': endRaid(); break;
+    case 'help': help(); break;
+    case 'settings':
+      openModal(`<h2>⚙️ Optionen</h2><p class="muted" style="font-size:14px">Dein Spielstand wird automatisch in diesem Browser gespeichert. Überfälle bisher: ${S.raids || 0}.</p>
+        <div class="foot"><button data-act="close">Schließen</button><button class="red" data-act="reset">Neues Spiel</button></div>`); break;
+    case 'reset':
+      openModal(`<h2>Wirklich neu anfangen?</h2><p class="muted">Deine Feste, Rohstoffe und Truppen gehen verloren.</p>
+        <div class="foot"><button data-act="close">Nein</button><button class="red" data-act="reset2">Ja, neu starten</button></div>`); break;
+    case 'reset2': newGame(); save(); R = null; mode = 'village'; selId = null; closeModal(); break;
+  }
+  renderAll();
+});
+$('modal').addEventListener('click', e => { if (e.target === $('modal') && !(R && R.ended)) closeModal(); });
+
+// ------------------------------------------------------------------
+//  Schleifen
+// ------------------------------------------------------------------
+let lastFrame = performance.now();
+function frame(t) {
+  const dt = Math.min(.05, (t - lastFrame) / 1000); lastFrame = t;
+  if (mode === 'raid') updateRaid(dt);
+  updateFx(dt);
+  draw(Date.now());
+  requestAnimationFrame(frame);
+}
+
+let saveTick = 0;
+setInterval(() => {
+  advance(Date.now());
+  if (++saveTick % 8 === 0) save();
+  renderHud();
+  if (mode === 'village') renderInfo();
+}, 250);
+
+load();
+advance(Date.now());
+resize();
+renderAll();
+requestAnimationFrame(frame);
+window.addEventListener('beforeunload', save);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+try { if (!localStorage.getItem(SAVE_KEY + '-seen')) { localStorage.setItem(SAVE_KEY + '-seen', '1'); help(); } } catch (e) {}
+</script>
+</body>
+</html>
